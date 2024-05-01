@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Tinykv，启~动！！</title>
+    <url>/2024/05/01/tinykv_start/</url>
+    <content><![CDATA[<h2 id="什么是Tinykv？"><a href="#什么是Tinykv？" class="headerlink" title="什么是Tinykv？"></a>什么是Tinykv？</h2><p>Tinykv是PingCAP推出的一个学习分布式系统的课程，这个公司在存储领域很厉害，比较著名的产品是TiDB。</p>
+<p>Tinykv这个课程的具体内容是使用Raft共识算法构建一个具有分布式事务支持的键值存储系统，它提供了一些骨架代码，我们只需要填充其中的一些核心逻辑，例如Raft层实现共识，RaftStore实现消息处理等等。</p>
+<p>整个课程有4个Project，分别为StandaloneKv、raftKv、MuiltiRaftKv、Transactions，整体难度上：porject3 &gt; project2 &gt;&gt; project4 &gt; project1。其中project2B和project3B是两个分水岭，一般都会Bug满天飞，需要打印详细的日志仔细地跟踪，并且有的Bug复现概率较低，要反复跑好几次，因此要坚持下来需要一定的毅力。</p>
+<p>如果集中精力做的话，我了解到的几个同学都是暑假一个月不到的时间就完成了，整体代码量也不多，就是测试修Bug比较折磨。我当时还有学业上的别的事情，并没有太多的精力集中搞这个，从开始到完成花了有三个月，期间也是卡在2B和3B摆烂了很久。不过所幸是坚持到了最后。</p>
+<p>如果时间凑巧的话，还可以报名PingCAP定期举办的tinykv学习营（<a href="https://tidb.net/talent-plan">Talent Plan | TiDB 社区</a>），能起到一定的督促作用，还能与其他同学交流经验心得，可以少踩很多坑。</p>
+<p>整个课程做下来能够学到的东西还是挺多的，例如raft共识算法、分布式系统架构、多版本并发控制等等，对于想走存储、分布式系统方向的同学还是很有用处的。</p>
+<p>‍</p>
+<h2 id="资源链接"><a href="#资源链接" class="headerlink" title="资源链接"></a>资源链接</h2><p>github仓库</p>
+<p><a href="https://github.com/talent-plan/tinykv">talent-plan&#x2F;tinykv：基于 TiKV 模型构建分布式键值服务的课程 (github.com)</a></p>
+<p>讲解视频</p>
+<p><a href="https://learn.pingcap.com/learner/course/510001">Talent Plan 2021 KV 学习营分享课 (pingcap.com)</a></p>
+<p>很有帮助的文章，Tinykv白皮书</p>
+<p><a href="https://zhuanlan.zhihu.com/p/457696758">如何快速通关 Talent Plan TinyKV？ - 知乎 (zhihu.com)</a></p>
+<p>‍</p>
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>tinykv对硬件稍微有点要求，否则跑得太慢又Bug满天飞心态很容易炸。我是使用14核处理器，32GB内存，SSD固态的笔记本，搭配wsl2的linux环境，运行起来非常流畅。固态据说是刚需，其他感觉与这差不多的配置或者低一点也没关系。非常推荐使用wsl，可以直接连接vscode非常快，环境配起来也嘎嘎轻松；用虚拟机也可以，不过我感觉有点慢。有配置好服务器的话更好，可以一直挂着跑。</p>
+<p>附上我当时配置wsl2参考的博客</p>
+<p><a href="https://blog.csdn.net/syqkali/article/details/131524540">如何在Windows11上安装WSL2的Ubuntu22.04（包括换源）_wsl2换源_syqkali的博客-CSDN博客</a></p>
+<p>由于项目用go实现，所以也要配置golang的运行环境，项目里还用到了make，我这里直接用apt安装即可</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">sudo apt update</span><br><span class="line">apt search golang-go</span><br><span class="line">sudo apt install golang-go</span><br><span class="line">go version </span><br><span class="line">sudo apt install make</span><br></pre></td></tr></table></figure>
+
+<p>接着从github仓库下载源码，得到的就是只有骨架代码的版本了。</p>
+<p>​<code>git clone https://github.com/talent-plan/tinykv.git</code>​</p>
+<p>建议在github上创建一个私有仓库来维护代码，这样就知道在哪些地方做了修改，并且可以很方便地恢复了。</p>
+<p>‍</p>
+<h2 id="快速掌握Go语言基本语法"><a href="#快速掌握Go语言基本语法" class="headerlink" title="快速掌握Go语言基本语法"></a>快速掌握Go语言基本语法</h2><p>如果对Go语言的基本语法不熟悉，可以通过以下链接的教程快速掌握，对于Tinykv已经足够了。</p>
+<p><a href="https://tour.go-zh.org/welcome/1">Go 语言之旅 (go-zh.org)</a></p>
+<p>‍</p>
+<h2 id="Tinykv快速上手"><a href="#Tinykv快速上手" class="headerlink" title="Tinykv快速上手"></a>Tinykv快速上手</h2><p>tinykv根目录下的doc目录存放了四个project的说明文档。文档是全英文的，可以搜到中文翻译（建议先中文了解一下框架，再英文看细节，有些翻译得不准会造成误解），详细介绍了每个项目的要实现的具体功能和细节上的要求，照着做就可以了。</p>
+<h3 id="代码编写"><a href="#代码编写" class="headerlink" title="代码编写"></a>代码编写</h3><p>每个project所要编写的代码都给出了注释提示，可以通过grep命令找到需要编写代码的地方。</p>
+<p>以project1为例，可以使用命令<code>grep -rIi &quot;Your Code Here(1)&quot;</code>​，来查找project1的项目文件以及需要编写代码的地方，主要的函数名和参数返回值都已经定义好了，只要填充其中的逻辑即可。注意project1之后的234都分成了A、B、C三部分，这时查找则是例如<code>grep -rIi &quot;Your Code Here(2A)&quot;</code>​这样。</p>
+<p>​​<img src="/2024/05/01/tinykv_start/image-20240501155452-w7ey5c1.png" alt="image">​</p>
+<p>当然虽然给出了主要的函数名和参数返回值，在project2和3还是要增加很多自定义的函数。</p>
+<h3 id="测试方式"><a href="#测试方式" class="headerlink" title="测试方式"></a>测试方式</h3><p>make projectxx</p>
+<p>project2b、2c、3b、3c测试一遍是不够的，需要跑很多次才能复现一些Bug，可以使用shell脚本批量跑。</p>
+<p>下面是我使用的测试脚本</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># settings to change</span></span><br><span class="line"><span class="built_in">times</span>=20</span><br><span class="line">project=<span class="string">&quot;2b&quot;</span></span><br><span class="line">removelog=1</span><br><span class="line"></span><br><span class="line"><span class="comment"># don&#x27;t change</span></span><br><span class="line"><span class="keyword">if</span> [ ! -d <span class="string">&quot;./test_output&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">mkdir</span> <span class="string">&quot;./test_output&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">logdir=<span class="string">&quot;./test_output/<span class="variable">$&#123;project&#125;</span>&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ ! -d <span class="variable">$logdir</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">mkdir</span> <span class="variable">$logdir</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line">lastdir=<span class="string">&quot;<span class="variable">$&#123;logdir&#125;</span>/`date +%Y%m%d%H%M%S`&quot;</span></span><br><span class="line"><span class="keyword">if</span> [ ! -d <span class="variable">$lastdir</span> ]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">mkdir</span> <span class="variable">$lastdir</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line">summary=<span class="string">&quot;<span class="variable">$&#123;lastdir&#125;</span>/summary.log&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;times pass fail panic runtime&quot;</span> &gt;&gt; <span class="variable">$summary</span></span><br><span class="line"></span><br><span class="line">totalpass=0</span><br><span class="line">totalfail=0</span><br><span class="line">totalpanic=0</span><br><span class="line">totalruntime=0</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> $(<span class="built_in">seq</span> 1 <span class="variable">$times</span>)</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    logfile=<span class="string">&quot;<span class="variable">$&#123;lastdir&#125;</span>/<span class="variable">$i</span>.log&quot;</span></span><br><span class="line">    start=$(<span class="built_in">date</span> +%s)</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;make project<span class="variable">$&#123;project&#125;</span> <span class="variable">$i</span> times&quot;</span></span><br><span class="line">    make project<span class="variable">$&#123;project&#125;</span> &gt;&gt; <span class="variable">$logfile</span></span><br><span class="line">    end=$(<span class="built_in">date</span> +%s)</span><br><span class="line">    pass_count=$(grep -i <span class="string">&quot;PASS&quot;</span> <span class="variable">$logfile</span> | <span class="built_in">wc</span> -l)</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;pass count: <span class="variable">$pass_count</span>&quot;</span></span><br><span class="line">    fail_count=$(grep -i <span class="string">&quot;fail&quot;</span> <span class="variable">$logfile</span> | <span class="built_in">wc</span> -l)</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;fail count: <span class="variable">$fail_count</span>&quot;</span></span><br><span class="line">    panic_count=$(grep -i <span class="string">&quot;panic&quot;</span> <span class="variable">$logfile</span> | <span class="built_in">wc</span> -l)</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;panic count: <span class="variable">$panic_count</span>&quot;</span></span><br><span class="line">    runtime=$((end-start))</span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$i</span> <span class="variable">$pass_count</span> <span class="variable">$fail_count</span> <span class="variable">$panic_count</span> <span class="variable">$runtime</span>&quot;</span> &gt;&gt; <span class="variable">$summary</span></span><br><span class="line"></span><br><span class="line">    totalpass=$((totalpass+pass_count))</span><br><span class="line">    totalfail=$((totalfail+fail_count))</span><br><span class="line">    totalpanic=$((totalpanic+panic_count))</span><br><span class="line">    totalruntime=$((totalruntime+runtime))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># if pass, remove the log</span></span><br><span class="line">    <span class="keyword">if</span> [ <span class="variable">$removelog</span> -eq 1 ]; <span class="keyword">then</span></span><br><span class="line">        <span class="keyword">if</span> [ <span class="variable">$panic_count</span> -lt 0 ]; <span class="keyword">then</span></span><br><span class="line">            <span class="built_in">rm</span> <span class="variable">$logfile</span></span><br><span class="line">        <span class="keyword">fi</span></span><br><span class="line">        <span class="built_in">sleep</span> 5</span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;total <span class="variable">$totalfail</span> <span class="variable">$totalpanic</span> <span class="variable">$totalruntime</span>&quot;</span> &gt;&gt; <span class="variable">$summary</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="打印日志"><a href="#打印日志" class="headerlink" title="打印日志"></a>打印日志</h3><p>打印日志非常重要，尤其是对于跟踪Project2B、2C、3B中的Bug。</p>
+<p>可以在<code>log/log.go</code>​的末尾增加以下代码：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> debug = <span class="number">0</span></span><br><span class="line"><span class="keyword">const</span> debug_raft = <span class="number">0</span></span><br><span class="line"><span class="keyword">const</span> debug_raftStore = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DPrintf</span><span class="params">(format <span class="type">string</span>, a ...<span class="keyword">interface</span>&#123;&#125;)</span></span> (n <span class="type">int</span>, err <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> debug &gt; <span class="number">0</span> &#123;</span><br><span class="line">		_log.Infof(format, a...)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DPrintfRaft</span><span class="params">(format <span class="type">string</span>, a ...<span class="keyword">interface</span>&#123;&#125;)</span></span> (n <span class="type">int</span>, err <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> debug_raft &gt; <span class="number">0</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;[Raft]: &quot;</span>+format, a...)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DPrintfRaftStore</span><span class="params">(format <span class="type">string</span>, a ...<span class="keyword">interface</span>&#123;&#125;)</span></span> (n <span class="type">int</span>, err <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> debug_raftStore &gt; <span class="number">0</span> &#123;</span><br><span class="line">		log.Printf(<span class="string">&quot;[RaftStore]: &quot;</span>+format, a...)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将<code>debug_xxx</code>​改为大于0之后，在需要打印日志的地方调用<code>log.DPrintfxxx</code>​即可。</p>
+<p>我这里分了三种日志类型，最重要的是<code>Raft</code>​和<code>RaftStore</code>​，分别对应Raft层的日志和RaftStore的日志，这样做的好处是面对海量的日志能够很容易找到哪个模块的代码出了问题，然后可以很轻松过地关闭一个模块的日志减少干扰。</p>
+<p>‍</p>
+<h2 id="Tinykv架构"><a href="#Tinykv架构" class="headerlink" title="Tinykv架构"></a>Tinykv架构</h2><p>在正式编码之前，我们可以大致了解一下Tinykv的架构，这里我直接结合官方的图大致来讲一下自己的理解。</p>
+<p>​<img src="/2024/05/01/tinykv_start/image-20240501170434-8r9kv28.png" alt="image">​</p>
+<p>Tinykv只关注分布式数据库系统的存储层，可以处理响应来自SQL层的RPC请求，同时还有一个TinyScheduler组件作为整个Tinykv集群的控制中心，从Tinykv的心跳中收集信息，负责一些调度工作，向Tinykv节点发送调度命令以实现负载均衡（project 3c）等等功能。</p>
+<p>自下而上解析Tinykv的组成：</p>
+<ol>
+<li><p>Engine，即kv存储引擎，是实际存储kv的地方。在Tinykv中使用的是badgerDB，使用了两个DB实例：kv和raftkv，分别用于存储实际的kv数据和raft日志，当然还分别存储了一些状态数据。</p>
+</li>
+<li><p>Storage，我理解为分布式逻辑层，这里分为了Standalone Storage和RaftStorage</p>
+<ol>
+<li><p>Standalone Storage对应project1，在badgerDB的API基础上封装了列族（可以理解为给每个key加上了前缀以实现分类），这是为了在后面project4中实现事务机制。</p>
+</li>
+<li><p>RaftStorage：project2和3的重点。负责了请求的处理和响应。包括了Raft层和Raft层之上的逻辑<strong>RaftStore</strong></p>
+<ol>
+<li>Raft层用于接收来自上层的Raft日志，实现共识算法，会定期给上层反馈已经提交的日志和要转发的消息等等。</li>
+<li>RaftStore则负责消息的封装和路由（分发到raft节点）、raft日志的持久化和命令的应用等等，比较复杂。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>server，接收RPC调用和响应，实现MVCC（多版本并发控制）和封装事务性API，对应project4</p>
+</li>
+</ol>
+<p>‍</p>
+<p>项目目录：</p>
+<ul>
+<li>​<code>kv</code>​包含键值存储的实现。</li>
+<li>​<code>raft</code>​包含 Raft 共识算法的实现。</li>
+<li>​<code>scheduler</code>​包含 TinyScheduler 的实现，该实现负责管理 TinyKV 节点和生成时间戳。</li>
+<li>​<code>proto</code>​包含节点和进程之间所有通信的实现，使用基于 gRPC 的协议缓冲区。此包包含 TinyKV 使用的协议定义，以及您可以使用的生成的 Go 代码。</li>
+<li>​<code>log</code>​包含基于级别输出日志的实用程序。</li>
+</ul>
+<p>‍</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>有了上述的一些准备之后就可以开始攻克Tinykv的各个project了，万事开头难，这也是我正儿八经的第一篇博客，后续会更新四个project的思路和踩的一些坑。由于缺乏有关分布式系统的很多知识，理解上可能会有很多谬误和遗漏，欢迎多多提问和指正。</p>
+<p>Tinykv 启~动！</p>
+]]></content>
+      <categories>
+        <category>存储</category>
+      </categories>
+      <tags>
+        <tag>kv</tag>
+        <tag>分布式系统</tag>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+</search>
