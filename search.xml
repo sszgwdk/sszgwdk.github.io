@@ -3,7 +3,9 @@
   <entry>
     <title>Tinykv，启~动！！</title>
     <url>/2024/05/01/tinykv_start/</url>
-    <content><![CDATA[<h2 id="什么是Tinykv？"><a href="#什么是Tinykv？" class="headerlink" title="什么是Tinykv？"></a>什么是Tinykv？</h2><p>Tinykv是PingCAP推出的一个学习分布式系统的课程，这个公司在存储领域很厉害，比较著名的产品是TiDB。</p>
+    <content><![CDATA[<p>前段时间磕磕绊绊学习了Tinykv这个项目，通过所有测试就没再理了，现在觉得不能把工夫浪费了，因此写个Blog记录一下。</p>
+<span id="more"></span>
+<h2 id="什么是Tinykv？"><a href="#什么是Tinykv？" class="headerlink" title="什么是Tinykv？"></a>什么是Tinykv？</h2><p>Tinykv是PingCAP推出的一个学习分布式系统的课程，这个公司在存储领域很厉害，比较著名的产品是TiDB。</p>
 <p>Tinykv这个课程的具体内容是使用Raft共识算法构建一个具有分布式事务支持的键值存储系统，它提供了一些骨架代码，我们只需要填充其中的一些核心逻辑，例如Raft层实现共识，RaftStore实现消息处理等等。</p>
 <p>整个课程有4个Project，分别为StandaloneKv、raftKv、MuiltiRaftKv、Transactions，整体难度上：porject3 &gt; project2 &gt;&gt; project4 &gt; project1。其中project2B和project3B是两个分水岭，一般都会Bug满天飞，需要打印详细的日志仔细地跟踪，并且有的Bug复现概率较低，要反复跑好几次，因此要坚持下来需要一定的毅力。</p>
 <p>如果集中精力做的话，我了解到的几个同学都是暑假一个月不到的时间就完成了，整体代码量也不多，就是测试修Bug比较折磨。我当时还有学业上的别的事情，并没有太多的精力集中搞这个，从开始到完成花了有三个月，期间也是卡在2B和3B摆烂了很久。不过所幸是坚持到了最后。</p>
