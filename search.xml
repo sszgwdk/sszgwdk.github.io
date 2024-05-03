@@ -198,7 +198,7 @@
 <tr>
 <td>MsgPropose</td>
 <td>本地消息，来自上层应用的Propose请求。只有Leader实际处理，其他都返回<code>ErrProposalDropped</code>​</td>
-<td>MsgType Entries       To</td>
+<td>MsgType Entries To</td>
 <td>✔</td>
 <td>✔</td>
 <td>✔</td>
@@ -206,7 +206,7 @@
 <tr>
 <td>MsgAppend</td>
 <td>用于Leader向其他节点同步数据，即日志复制。</td>
-<td>MsgType      Index     Term     LogTerm    Entries    Commit     To          From</td>
+<td>MsgType Index Term LogTerm Entries Commit To From</td>
 <td>✔</td>
 <td>✔</td>
 <td>✔</td>
@@ -214,7 +214,7 @@
 <tr>
 <td>MsgAppendResponse</td>
 <td>用于回复收到的 <code>MessageType_MsgAppend</code>​ 和 <code>MessageType_MsgSnapshot</code>​。Leader据此更新Match和Next等记录</td>
-<td>MsgType      Index     Term     Reject         To          From</td>
+<td>MsgType Index Term Reject To From</td>
 <td></td>
 <td></td>
 <td>✔</td>
@@ -222,7 +222,7 @@
 <tr>
 <td>MsgRequestVote</td>
 <td>candidate发送的投票请求</td>
-<td>MsgType      Index     Term     LogTerm        To          From</td>
+<td>MsgType Index Term LogTerm To From</td>
 <td>✔</td>
 <td>✔</td>
 <td>✔</td>
@@ -230,7 +230,7 @@
 <tr>
 <td>MsgRequestVoteResponse</td>
 <td>投票响应</td>
-<td>MsgType        Term     Reject         To          From</td>
+<td>MsgType Term Reject To From</td>
 <td></td>
 <td>✔</td>
 <td></td>
@@ -238,7 +238,7 @@
 <tr>
 <td>MsgSnapshot</td>
 <td>project2c，当 Leader 发现目标节点所需的日志已经被 compact 的时候，则发送 Snapshot。</td>
-<td>MsgType         Term     Snapshot    To          From</td>
+<td>MsgType Term Snapshot To From</td>
 <td>✔</td>
 <td>✔</td>
 <td>✔</td>
@@ -246,7 +246,7 @@
 <tr>
 <td>MsgHeartbeat</td>
 <td>来自Leader的心跳消息</td>
-<td>MsgType         Term          To          From</td>
+<td>MsgType Term To From</td>
 <td>✔</td>
 <td></td>
 <td></td>
@@ -254,7 +254,7 @@
 <tr>
 <td>MsgHeartbeatResponse</td>
 <td>心跳响应，包含当前follower的Commit索引，Leader据此判断它的进度</td>
-<td>MsgType      Term        Commit     To          From            Reject</td>
+<td>MsgType Term Commit To From Reject</td>
 <td></td>
 <td></td>
 <td>✔</td>
@@ -262,7 +262,7 @@
 <tr>
 <td>MsgTransferLeader</td>
 <td>本地消息，领导权转移，Project3A</td>
-<td>MsgType           From</td>
+<td>MsgType From</td>
 <td>✔</td>
 <td>✔</td>
 <td>✔</td>
@@ -270,7 +270,7 @@
 <tr>
 <td>MsgTimeoutNow</td>
 <td>目标节点收到该消息，即刻自增 term 发起选举</td>
-<td>MsgType           From         To<br></td>
+<td>MsgType From To<br></td>
 <td>✔</td>
 <td>✔</td>
 <td></td>
