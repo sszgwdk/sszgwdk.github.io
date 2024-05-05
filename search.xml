@@ -1,8 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>tinykv project1思路</title>
+    <url>/2024/05/02/tinykv_project1_solution/</url>
+    <content><![CDATA[<span id="more"></span>
+<p>project1是一个热身项目，内容非常简单。项目文档中提到需要实现两部分的内容：（1）独立存储引擎；（2）原始kv服务处理程序。下面分别介绍一下基本的思路。</p>
+<h2 id="独立存储引擎"><a href="#独立存储引擎" class="headerlink" title="独立存储引擎"></a>独立存储引擎</h2><p>文档中提到该任务是对badgerDB的读写API的封装以支持列族（Column Family, CF）。通过运行<code>grep -rIi &quot;Your Code Here (1).&quot;</code>​发现需要编写的代码主要在<code>kv/storage/standalone_storage/standalone_storage.go</code>​，需要实现：</p>
+<ol>
+<li>定义<code>StandAloneStorage</code>​的数据结构</li>
+<li>定义<code>NewStandAloneStorage</code>​函数，根据参数<code>Config</code>​创建一个<code>StandAloneStorage</code>​对象</li>
+<li>填充<code>Start, Stop, Reader, Write</code>​四个函数</li>
+</ol>
+<h3 id="​StandAloneStorage​​​的定义和新建"><a href="#​StandAloneStorage​​​的定义和新建" class="headerlink" title="​StandAloneStorage​​​的定义和新建"></a>​<code>StandAloneStorage</code>​​​的定义和新建</h3><p>根据项目文档，engine_util包 （<code>kv/util/engine_util</code>​）中提供了所有的读写操作，即需要封装的API。但是我们并不知道它们在哪里，<code>kv/util/engine_util/doc.go</code>​中给出了一些信息：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">* engines: a data structure <span class="keyword">for</span> keeping engines required by unistore.</span><br><span class="line">* write_batch: code to batch writes into a single, atomic <span class="string">&#x27;transaction&#x27;</span>.</span><br><span class="line">* cf_iterator: code to iterate over a whole column family in badger.</span><br></pre></td></tr></table></figure>
+
+<p>从命名和描述可以看出engines是存储引擎、write_batch是将多个写入整合到一个batch中，cf_iterator则是在badger中迭代列族。</p>
+<p>再来看具体的文件。</p>
+<p>​<code>kv/util/engine_util/engines.go</code>​中定义了<code>Engines</code>​类，包含了两个<code>badger.DB</code>​的指针，还提供了<code>NewEngines</code>​、<code>WriteKV</code>​、<code>WriteRaft</code>​、<code>Close</code>​、<code>Destroy</code>​、<code>CreateDB</code>​这些函数。很显然<code>StandAloneStorage</code>​是对<code>Engines</code>​的封装，需要包含一个<code>engine_util.Engines</code>​成员，<code>NewStandAloneStorage</code>​需要进行<code>CreateDB</code>​和<code>NewEngines</code>​两个步骤。<code>Start</code>​不需要修改，<code>Stop</code>​需要调用<code>en.Close()</code>​;</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> Engines <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Data, including data which is committed (i.e., committed across other nodes) and un-committed (i.e., only present</span></span><br><span class="line">	<span class="comment">// locally).</span></span><br><span class="line">	Kv     *badger.DB</span><br><span class="line">	KvPath <span class="type">string</span></span><br><span class="line">	<span class="comment">// Metadata used by Raft.</span></span><br><span class="line">	Raft     *badger.DB</span><br><span class="line">	RaftPath <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorage <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your Data Here (1).</span></span><br><span class="line">	en *engine_util.Engines</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Write"><a href="#Write" class="headerlink" title="Write"></a>Write</h3><p>关于Write的实现，文档告诉我们参数<code>ctx *kvrpcpb.Context</code>​暂时不用管，只剩下一个参数<code>batch []storage.Modify</code>​，可知是接口<code>Modify</code>​类型切片，通过观察类定义和相关函数发现，<code>Modify</code>​中可以是类型为<code>Put</code>​或<code>Delete</code>​类型的<code>Data</code>​，使用<code>.Key().Cf().Value()</code>​取对应的字段。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> Modify <span class="keyword">struct</span> &#123;</span><br><span class="line">	Data <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Put <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key   []<span class="type">byte</span></span><br><span class="line">	Value []<span class="type">byte</span></span><br><span class="line">	Cf    <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Delete <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key []<span class="type">byte</span></span><br><span class="line">	Cf  <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Key() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Key</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Key</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Value() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> putData, ok := m.Data.(Put); ok &#123;</span><br><span class="line">		<span class="keyword">return</span> putData.Value</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Cf() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Cf</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Cf</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因此我们在<code>Write</code>​中需要做的应该是：声明一个空的<code>WriteBatch wb</code>，然后遍历参数<code>batch</code>​，提取每一个<code>key,val,cf</code>​，使用辅助函数添加到<code>wb</code>中；遍历结束后调用<code>en.WriteKV</code>​实现写入。</p>
+<p>通过阅读<code>kv/util/engine_util/write_batch.go</code>​可知要用到的辅助函数是类<code>WriteBatch</code>​的<code>SetCF</code>​和<code>DeleteCF</code>​接口。</p>
+<h3 id="Reader"><a href="#Reader" class="headerlink" title="Reader"></a>Reader</h3><p>​<code>Reader</code>​方法返回一个<code>StorageReader</code>​接口，要求实现<code>GetCF()、IterCF()、Close()</code>​三个方法</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StorageReader <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// When the key doesn&#x27;t exist, return nil for the value</span></span><br><span class="line">	GetCF(cf <span class="type">string</span>, key []<span class="type">byte</span>) ([]<span class="type">byte</span>, <span class="type">error</span>)</span><br><span class="line">	IterCF(cf <span class="type">string</span>) engine_util.DBIterator</span><br><span class="line">	Close()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>文档中说应该使用<code>badger.Txn</code>​来实现<code>Reader</code>​函数，但是<code>badger.Txn</code>​并没有<code>GetCF()、IterCF()、Close()</code>​这三个方法，因此不能满足<code>StorageReader</code>​接口的要求（go语言接口<code>interface</code>的限制），我们要对其进行封装。</p>
+<p>我这里定义了一个<code>StandAloneStorageReader</code>​类，包含了一个<code>badger.Txn</code>​成员，分别使用<code>engine_util.GetCFFromTxn</code>​、<code>engine_util.NewCFIterator</code>​、<code>txn.Discard</code>​实现了<code>GetCF()、IterCF()、Close()</code>​。在<code>Reader</code>​中只需要调用<code>en.Kv.NewTransaction</code>​创建一个<code>txn</code>​，然后返回一个<code>StandAloneStorageReader</code>​即可。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *StandAloneStorage)</span></span> Reader(ctx *kvrpcpb.Context) (storage.StorageReader, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (1).</span></span><br><span class="line">	txn := s.en.Kv.NewTransaction(<span class="literal">false</span>)</span><br><span class="line">	<span class="keyword">return</span> &amp;StandAloneStorageReader&#123;</span><br><span class="line">		txn: txn,</span><br><span class="line">	&#125;, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorageReader <span class="keyword">struct</span> &#123;</span><br><span class="line">	txn *badger.Txn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实现服务处理程序"><a href="#实现服务处理程序" class="headerlink" title="实现服务处理程序"></a>实现服务处理程序</h2><p>需要实现的代码在<code>kv/server/raw_api.go</code>​当中，需要实现<code>RawGet</code>​、<code>RawPut</code>​、<code>RawDelete</code>​、<code>RawScan</code>​。前三个都很简单，没有需要自己寻找或设计的数据结构，部分接口需要查找，不过都是可以根据参数和成员得到的。</p>
+<p>​<code>RawScan</code>​函数主要是要弄清它的功能：从<code>startkey</code>​开始，取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
+<p>这样就知道需要用<code>Reader</code>​的迭代器，首先<code>Seek</code>​到<code>StartKey</code>​的位置，然后取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
+<p>​<code>iter</code>​的使用方式参考：<code>iter-&gt;Seek(StartKey)</code>​ –&gt;<code>iter-&gt;Valid()</code>​ –&gt;<code>iter.Next()</code>​</p>
+<h2 id="测试问题"><a href="#测试问题" class="headerlink" title="测试问题"></a>测试问题</h2><p>出现一个问题</p>
+<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204912-q20bqqq.png" alt="image">​</p>
+<p>查看测试代码，发现当KeyNotFound时要求err返回nil</p>
+<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204940-tsx3alt.png" alt="image">​</p>
+<p>解决后成功通过！完成 project 1！</p>
+<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116213243-xxct0mn.png" alt="image">​</p>
+]]></content>
+      <categories>
+        <category>存储</category>
+      </categories>
+      <tags>
+        <tag>kv</tag>
+        <tag>分布式系统</tag>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>tinykv project2b文档翻译和关键点标注</title>
-    <url>/2024/05/05/tinykv%20project2B_doc_translation/</url>
+    <url>/2024/05/05/tinykv_project2B_doc_translation/</url>
     <content><![CDATA[<span id="more"></span>
 
 <p>这几天想写tinykv project2B的思路，但是感觉内容太多不知道从何处写起。思来想去觉得可以先翻译一下project2B的文档，将比较关键的地方标注出来。</p>
@@ -15,7 +66,7 @@
 <li>Peer 代表运行在 Store 上的 Raft 节点</li>
 <li>Region 是 Peers 的集合，也称为 Raft Group（<mark><strong>Region将键空间以范围range划分，是实现Project3 MuitiRaft的关键概念，Project2中默认只有一个Region</strong></mark>）</li>
 </ul>
-<p>​![image](tinykv project2B_doc_translation&#x2F;image-20240505150015-qwdhuaz.png)​</p>
+<p>​<img src="/2024/05/05/tinykv_project2B_doc_translation/image-20240505150015-qwdhuaz.png" alt="image">​</p>
 <p>为简单起见，project2 的 Store 上只有一个 Peer 节点，集群中只有一个 Region。因此，您现在无需考虑 Region 的范围。Project3 中将进一步引入多个 Region。</p>
 <h3 id="the-Code"><a href="#the-Code" class="headerlink" title="the Code"></a>the Code</h3><p>首先，您应该看看<code>kv/storage/raft_storage/raft_server.go</code>​中的<code>RaftStorage</code>​，其也实现了<code>Storage</code>​接口。与<code>StandaloneStorage</code>​直接写入或读取底层引擎不同，它首先将每个写入和读取请求发送到 Raft，然后在 Raft 提交请求后对底层引擎进行实际的写入和读取。通过这种方式，可以保持多个<code>Stores</code>​之间的一致性。</p>
 <p>​<code>RaftStorage</code>​创建一个<code>Raftstore</code>​驱动 Raft。在调用<code>Reader</code>​or<code>Write</code>​函数时，它实际上会通过通道（通道为<code>raftWorker</code>​的<code>raftCh</code>​）向 raftstore 发送一个定义在<code>proto/proto/raft_cmdpb.proto</code>​中的<code>RaftCmdRequest</code>​和四种基本命令类型（Get&#x2F;Put&#x2F;Delete&#x2F;Snap），<mark><strong>并在 Raft 提交并应用命令后利用回调向客户端返回响应</strong></mark>。<code>Reader</code>​和<code>Write</code>​函数的参数<code>kvrpc.Context</code>​现在很有用，它从客户端的角度携带<code>Region</code>​信息，并作为<code>RaftCmdRequest</code>​的标头传递。<mark><strong>信息可能不正确或过时，因此 raftstore 需要检查它们并决定是否将该请求Propose到 Raft 层进行共识</strong></mark>。</p>
@@ -132,57 +183,6 @@
 </ul>
 </blockquote>
 <p>‍</p>
-]]></content>
-      <categories>
-        <category>存储</category>
-      </categories>
-      <tags>
-        <tag>kv</tag>
-        <tag>分布式系统</tag>
-        <tag>raft</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>tinykv project1思路</title>
-    <url>/2024/05/02/tinykv_project1_solution/</url>
-    <content><![CDATA[<span id="more"></span>
-<p>project1是一个热身项目，内容非常简单。项目文档中提到需要实现两部分的内容：（1）独立存储引擎；（2）原始kv服务处理程序。下面分别介绍一下基本的思路。</p>
-<h2 id="独立存储引擎"><a href="#独立存储引擎" class="headerlink" title="独立存储引擎"></a>独立存储引擎</h2><p>文档中提到该任务是对badgerDB的读写API的封装以支持列族（Column Family, CF）。通过运行<code>grep -rIi &quot;Your Code Here (1).&quot;</code>​发现需要编写的代码主要在<code>kv/storage/standalone_storage/standalone_storage.go</code>​，需要实现：</p>
-<ol>
-<li>定义<code>StandAloneStorage</code>​的数据结构</li>
-<li>定义<code>NewStandAloneStorage</code>​函数，根据参数<code>Config</code>​创建一个<code>StandAloneStorage</code>​对象</li>
-<li>填充<code>Start, Stop, Reader, Write</code>​四个函数</li>
-</ol>
-<h3 id="​StandAloneStorage​​​的定义和新建"><a href="#​StandAloneStorage​​​的定义和新建" class="headerlink" title="​StandAloneStorage​​​的定义和新建"></a>​<code>StandAloneStorage</code>​​​的定义和新建</h3><p>根据项目文档，engine_util包 （<code>kv/util/engine_util</code>​）中提供了所有的读写操作，即需要封装的API。但是我们并不知道它们在哪里，<code>kv/util/engine_util/doc.go</code>​中给出了一些信息：</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line">* engines: a data structure <span class="keyword">for</span> keeping engines required by unistore.</span><br><span class="line">* write_batch: code to batch writes into a single, atomic <span class="string">&#x27;transaction&#x27;</span>.</span><br><span class="line">* cf_iterator: code to iterate over a whole column family in badger.</span><br></pre></td></tr></table></figure>
-
-<p>从命名和描述可以看出engines是存储引擎、write_batch是将多个写入整合到一个batch中，cf_iterator则是在badger中迭代列族。</p>
-<p>再来看具体的文件。</p>
-<p>​<code>kv/util/engine_util/engines.go</code>​中定义了<code>Engines</code>​类，包含了两个<code>badger.DB</code>​的指针，还提供了<code>NewEngines</code>​、<code>WriteKV</code>​、<code>WriteRaft</code>​、<code>Close</code>​、<code>Destroy</code>​、<code>CreateDB</code>​这些函数。很显然<code>StandAloneStorage</code>​是对<code>Engines</code>​的封装，需要包含一个<code>engine_util.Engines</code>​成员，<code>NewStandAloneStorage</code>​需要进行<code>CreateDB</code>​和<code>NewEngines</code>​两个步骤。<code>Start</code>​不需要修改，<code>Stop</code>​需要调用<code>en.Close()</code>​;</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> Engines <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Data, including data which is committed (i.e., committed across other nodes) and un-committed (i.e., only present</span></span><br><span class="line">	<span class="comment">// locally).</span></span><br><span class="line">	Kv     *badger.DB</span><br><span class="line">	KvPath <span class="type">string</span></span><br><span class="line">	<span class="comment">// Metadata used by Raft.</span></span><br><span class="line">	Raft     *badger.DB</span><br><span class="line">	RaftPath <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorage <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your Data Here (1).</span></span><br><span class="line">	en *engine_util.Engines</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="Write"><a href="#Write" class="headerlink" title="Write"></a>Write</h3><p>关于Write的实现，文档告诉我们参数<code>ctx *kvrpcpb.Context</code>​暂时不用管，只剩下一个参数<code>batch []storage.Modify</code>​，可知是接口<code>Modify</code>​类型切片，通过观察类定义和相关函数发现，<code>Modify</code>​中可以是类型为<code>Put</code>​或<code>Delete</code>​类型的<code>Data</code>​，使用<code>.Key().Cf().Value()</code>​取对应的字段。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> Modify <span class="keyword">struct</span> &#123;</span><br><span class="line">	Data <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Put <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key   []<span class="type">byte</span></span><br><span class="line">	Value []<span class="type">byte</span></span><br><span class="line">	Cf    <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Delete <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key []<span class="type">byte</span></span><br><span class="line">	Cf  <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Key() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Key</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Key</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Value() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> putData, ok := m.Data.(Put); ok &#123;</span><br><span class="line">		<span class="keyword">return</span> putData.Value</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Cf() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Cf</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Cf</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因此我们在<code>Write</code>​中需要做的应该是：声明一个空的<code>WriteBatch wb</code>，然后遍历参数<code>batch</code>​，提取每一个<code>key,val,cf</code>​，使用辅助函数添加到<code>wb</code>中；遍历结束后调用<code>en.WriteKV</code>​实现写入。</p>
-<p>通过阅读<code>kv/util/engine_util/write_batch.go</code>​可知要用到的辅助函数是类<code>WriteBatch</code>​的<code>SetCF</code>​和<code>DeleteCF</code>​接口。</p>
-<h3 id="Reader"><a href="#Reader" class="headerlink" title="Reader"></a>Reader</h3><p>​<code>Reader</code>​方法返回一个<code>StorageReader</code>​接口，要求实现<code>GetCF()、IterCF()、Close()</code>​三个方法</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> StorageReader <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// When the key doesn&#x27;t exist, return nil for the value</span></span><br><span class="line">	GetCF(cf <span class="type">string</span>, key []<span class="type">byte</span>) ([]<span class="type">byte</span>, <span class="type">error</span>)</span><br><span class="line">	IterCF(cf <span class="type">string</span>) engine_util.DBIterator</span><br><span class="line">	Close()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>文档中说应该使用<code>badger.Txn</code>​来实现<code>Reader</code>​函数，但是<code>badger.Txn</code>​并没有<code>GetCF()、IterCF()、Close()</code>​这三个方法，因此不能满足<code>StorageReader</code>​接口的要求（go语言接口<code>interface</code>的限制），我们要对其进行封装。</p>
-<p>我这里定义了一个<code>StandAloneStorageReader</code>​类，包含了一个<code>badger.Txn</code>​成员，分别使用<code>engine_util.GetCFFromTxn</code>​、<code>engine_util.NewCFIterator</code>​、<code>txn.Discard</code>​实现了<code>GetCF()、IterCF()、Close()</code>​。在<code>Reader</code>​中只需要调用<code>en.Kv.NewTransaction</code>​创建一个<code>txn</code>​，然后返回一个<code>StandAloneStorageReader</code>​即可。</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *StandAloneStorage)</span></span> Reader(ctx *kvrpcpb.Context) (storage.StorageReader, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (1).</span></span><br><span class="line">	txn := s.en.Kv.NewTransaction(<span class="literal">false</span>)</span><br><span class="line">	<span class="keyword">return</span> &amp;StandAloneStorageReader&#123;</span><br><span class="line">		txn: txn,</span><br><span class="line">	&#125;, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorageReader <span class="keyword">struct</span> &#123;</span><br><span class="line">	txn *badger.Txn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="实现服务处理程序"><a href="#实现服务处理程序" class="headerlink" title="实现服务处理程序"></a>实现服务处理程序</h2><p>需要实现的代码在<code>kv/server/raw_api.go</code>​当中，需要实现<code>RawGet</code>​、<code>RawPut</code>​、<code>RawDelete</code>​、<code>RawScan</code>​。前三个都很简单，没有需要自己寻找或设计的数据结构，部分接口需要查找，不过都是可以根据参数和成员得到的。</p>
-<p>​<code>RawScan</code>​函数主要是要弄清它的功能：从<code>startkey</code>​开始，取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
-<p>这样就知道需要用<code>Reader</code>​的迭代器，首先<code>Seek</code>​到<code>StartKey</code>​的位置，然后取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
-<p>​<code>iter</code>​的使用方式参考：<code>iter-&gt;Seek(StartKey)</code>​ –&gt;<code>iter-&gt;Valid()</code>​ –&gt;<code>iter.Next()</code>​</p>
-<h2 id="测试问题"><a href="#测试问题" class="headerlink" title="测试问题"></a>测试问题</h2><p>出现一个问题</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204912-q20bqqq.png" alt="image">​</p>
-<p>查看测试代码，发现当KeyNotFound时要求err返回nil</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204940-tsx3alt.png" alt="image">​</p>
-<p>解决后成功通过！完成 project 1！</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116213243-xxct0mn.png" alt="image">​</p>
 ]]></content>
       <categories>
         <category>存储</category>
