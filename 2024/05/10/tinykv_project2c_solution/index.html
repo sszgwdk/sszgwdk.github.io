@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"sszgwdk.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta property="og:type" content="article">
+<meta property="og:title" content="tinykv project2c思路">
+<meta property="og:url" content="https://sszgwdk.github.io/2024/05/10/tinykv_project2c_solution/index.html">
+<meta property="og:site_name" content="sszgwdk的博客">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-05-10T15:13:00.000Z">
+<meta property="article:modified_time" content="2024-05-10T15:13:14.146Z">
+<meta property="article:author" content="sszgwdk">
+<meta property="article:tag" content="kv">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="raft">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://sszgwdk.github.io/2024/05/10/tinykv_project2c_solution/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>tinykv project2c思路 | sszgwdk的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="sszgwdk的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">sszgwdk的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://sszgwdk.github.io/2024/05/10/tinykv_project2c_solution/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lxq.jpg">
+      <meta itemprop="name" content="sszgwdk">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="sszgwdk的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tinykv project2c思路
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-05-10 23:13:00 / 修改时间：23:13:14" itemprop="dateCreated datePublished" datetime="2024-05-10T23:13:00+08:00">2024-05-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%98%E5%82%A8/" itemprop="url" rel="index"><span itemprop="name">存储</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+            <div class="post-description"> </div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <span id="more"></span>
+
+<p>project2c目的是实现RaftLog GC和Snapshot支持。在Raft和raftstore中均需要修改和新增代码。</p>
+<h2 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h2><p>raft 一致性算法并没有考虑log无限增长的情况，若不做任何处理，随着系统的长时间运行，Raft节点中的RaftLog会占用大量内存；所以要引进applied index，把applied之前的条目定期压缩（compact）起来然后落盘，最后在内存删除它们，只需要记录最后applied的<code>Index、Term</code>​，以及一些状态。这就是RaftLog GC。</p>
+<p>基于RaftLog GC，我们需要实现Snapshot支持来保障Raft算法的正常运行。这主要是在日志复制的过程中，leader需要给follower发送<code>[next, LastIndex]</code>​的条目以及<code>next-1</code>​的index和Term，很可能<code>next-1</code>​（最小索引）的条目已经被compact掉了，此时没法完成日志复制所需的匹配动作，因此leader需要发送一个Snapshot来帮助follower赶上进度。事实上，Project3中实现增加节点（<code>Add Peer</code>​）时，也是通过Snapshot来初始化新节点。</p>
+<h3 id="Snapshot的生成"><a href="#Snapshot的生成" class="headerlink" title="Snapshot的生成"></a>Snapshot的生成</h3><p>tinykv已经提供了Raft节点获取Snapshot的接口<code>r.RaftLog.storage.Snapshot()</code>​。可以发现是一个异步的实现，将一个任务丢给了<code>ps.regionSched</code>​，这是消费者端。</p>
+<p>之所以采用异步实现，是因为SnapShot通常比较大，所以一般Leader第一次调用<code>r.RaftLog.storage.Snapshot()</code>​可能拿不到结果，不过worker已经开始生成了，等后面再调用时就能够直接返回。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// schedule snapshot generate task</span></span><br><span class="line">ps.regionSched &lt;- &amp;runner.RegionTaskGen&#123;</span><br><span class="line">	RegionId: ps.region.GetId(),</span><br><span class="line">	Notifier: ch,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>生产者端是在kv&#x2F;raftstore&#x2F;runner&#x2F;region_task.go（根据<code>RegionTaskGen</code>​就可以找到）</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *regionTaskHandler)</span></span> Handle(t worker.Task) &#123;</span><br><span class="line">	<span class="keyword">switch</span> t.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> *RegionTaskGen:</span><br><span class="line">		task := t.(*RegionTaskGen)</span><br><span class="line">		<span class="comment">// It is safe for now to handle generating and applying snapshot concurrently,</span></span><br><span class="line">		<span class="comment">// but it may not when merge is implemented.</span></span><br><span class="line">		r.ctx.handleGen(task.RegionId, task.Notifier)</span><br><span class="line">	<span class="keyword">case</span> *RegionTaskApply:</span><br><span class="line">		task := t.(*RegionTaskApply)</span><br><span class="line">		r.ctx.handleApply(task.RegionId, task.Notifier, task.StartKey, task.EndKey, task.SnapMeta)</span><br><span class="line">	<span class="keyword">case</span> *RegionTaskDestroy:</span><br><span class="line">		task := t.(*RegionTaskDestroy)</span><br><span class="line">		r.ctx.cleanUpRange(task.RegionId, task.StartKey, task.EndKey)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后会走到<code>doSnapshot</code>​当中，关键的部分如下。这样就生成了一个SnapShot</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">snapshot := &amp;eraftpb.Snapshot&#123;</span><br><span class="line">	Metadata: &amp;eraftpb.SnapshotMetadata&#123;</span><br><span class="line">		Index:     key.Index,</span><br><span class="line">		Term:      key.Term,</span><br><span class="line">		ConfState: &amp;confState,</span><br><span class="line">	&#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>raft leader 发现某个节点落后较多（该节点的Next-1位置的entry已经被leader compact了），则给他发送一个Snapshot</p>
+<h3 id="Snapshot的Apply"><a href="#Snapshot的Apply" class="headerlink" title="Snapshot的Apply"></a>Snapshot的Apply</h3><p>SnapShot的Apply也应该采用如上的方法，以异步的方式，创意一个<code>RegionTaskApply</code>​结构体丢给<code>ps.regionSched</code>​。</p>
+<p>‍</p>
+<h2 id="在Raft中实现"><a href="#在Raft中实现" class="headerlink" title="在Raft中实现"></a>在Raft中实现</h2><p>对于Snapshot，在raft模块我们主要需要实现“leader获取并发送SnapShot”，“Follower处理Snapshot消息”，“log”，“ready”四块功能。</p>
+<p>​<code>pb.Snapshot</code>​类定义：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Snapshot <span class="keyword">struct</span> &#123;</span><br><span class="line">	Data                 []<span class="type">byte</span>            <span class="string">`protobuf:&quot;bytes,1,opt,name=data,proto3&quot; json:&quot;data,omitempty&quot;`</span></span><br><span class="line">	Metadata             *SnapshotMetadata <span class="string">`protobuf:&quot;bytes,2,opt,name=metadata&quot; json:&quot;metadata,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125;          <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>            <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>             <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> SnapshotMetadata <span class="keyword">struct</span> &#123;</span><br><span class="line">	ConfState            *ConfState <span class="string">`protobuf:&quot;bytes,1,opt,name=conf_state,json=confState&quot; json:&quot;conf_state,omitempty&quot;`</span></span><br><span class="line">	Index                <span class="type">uint64</span>     <span class="string">`protobuf:&quot;varint,2,opt,name=index,proto3&quot; json:&quot;index,omitempty&quot;`</span></span><br><span class="line">	Term                 <span class="type">uint64</span>     <span class="string">`protobuf:&quot;varint,3,opt,name=term,proto3&quot; json:&quot;term,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125;   <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>     <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>      <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> ConfState <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// all node id</span></span><br><span class="line">	Nodes                []<span class="type">uint64</span> <span class="string">`protobuf:&quot;varint,1,rep,packed,name=nodes&quot; json:&quot;nodes,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125; <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>   <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>    <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​​其中<code>Metadata</code>​是我们需要注意的关键数据。</p>
+<h3 id="leader获取并发送SnapShot"><a href="#leader获取并发送SnapShot" class="headerlink" title="leader获取并发送SnapShot"></a>leader获取并发送SnapShot</h3><p>在“问题分析”中提到raft leader 发现某个节点落后较多（该节点的Next-1位置的entry已经被leader compact了），则给他发送一个Snapshot。</p>
+<p>Compact实际做的事情就是日志截断。这里“被leader compact”的含义是由于截断leader中已经找不到Next-1（即论文中的<code>preLogIndex</code>​）位置的entry了，所以没办法通过单纯的<code>sendAppend</code>​进行日志同步（没办法获取<code>preLogTerm</code>​）。</p>
+<p><strong>所以需要做的修改是要在</strong>​<code>**sendAppend**</code>​<strong>加入检查并发送Snapshot的逻辑。</strong></p>
+<p>那么首先的一个问题就是如何检查<code>next-1</code>​位置的entry已经被compact了？</p>
+<p>已知<code>preLogIndex=next-1</code>​，通过<code>r.RaftLog.Term(preLogIndex)</code>​来获取<code>preLogTerm</code>​。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(l *RaftLog)</span></span> Term(i <span class="type">uint64</span>) (<span class="type">uint64</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (2A).</span></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(l.entries) &gt; <span class="number">0</span> &amp;&amp; i &gt;= l.dummyIndex &#123;</span><br><span class="line">		<span class="keyword">if</span> i &gt; l.LastIndex() &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="number">0</span>, ErrUnavailable</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> l.entries[i-l.dummyIndex].Term, <span class="literal">nil</span></span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		term, err := l.storage.Term(i)</span><br><span class="line">		<span class="keyword">return</span> term, err</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果发生compact，那么显然上述调用会走到else分支，再来看一下<code>l.storage.Term</code>​的实现kv&#x2F;raftstore&#x2F;peer_storage.go。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps *PeerStorage)</span></span> Term(idx <span class="type">uint64</span>) (<span class="type">uint64</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> idx == ps.truncatedIndex() &#123;</span><br><span class="line">		<span class="keyword">return</span> ps.truncatedTerm(), <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err := ps.checkRange(idx, idx+<span class="number">1</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> ps.truncatedTerm() == ps.raftState.LastTerm || idx == ps.raftState.LastIndex &#123;</span><br><span class="line">		<span class="keyword">return</span> ps.raftState.LastTerm, <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> entry eraftpb.Entry</span><br><span class="line">	<span class="keyword">if</span> err := engine_util.GetMeta(ps.Engines.Raft, meta.RaftLogKey(ps.region.Id, idx), &amp;entry); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> entry.Term, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps *PeerStorage)</span></span> checkRange(low, high <span class="type">uint64</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> low &gt; high &#123;</span><br><span class="line">		<span class="keyword">return</span> errors.Errorf(<span class="string">&quot;low %d is greater than high %d&quot;</span>, low, high)</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> low &lt;= ps.truncatedIndex() &#123;</span><br><span class="line">		<span class="keyword">return</span> raft.ErrCompacted</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> high &gt; ps.raftState.LastIndex+<span class="number">1</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> errors.Errorf(<span class="string">&quot;entries&#x27; high %d is out of bound, lastIndex %d&quot;</span>,</span><br><span class="line">			high, ps.raftState.LastIndex)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>仔细阅读上面的代码，在<code>checkRange</code>​函数中找到了一个错误<code>ErrCompacted</code>​，它的条件是<code>low &lt;= ps.truncatedIndex()</code>​，即小于被截断的最高Index，符合我们上面描述的Compact的操作。因此可以确定只要对这个错误进行检查即可。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">preLogTerm, err := r.RaftLog.Term(preLogIndex)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err == ErrCompacted &#123;</span><br><span class="line">		r.sendSnapshot(to)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来考虑实现<code>sendSnapshot</code>​这一函数。</p>
+<p>首先是Snapshot的获取，根据在“Snapshot生成”中的描述，通过<code>r.RaftLog.storage.Snapshot()</code>​可以异步生成一个SnapShot，由于SnapShot通常比较大，因此第一次调用可能会返回错误，即SnapShot还没有准备好，因此要对这种情况做判断，对应的错误是<code>ErrSnapshotTemporailyUnavailable</code>​。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> sendSnapshot(to <span class="type">uint64</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (2C).</span></span><br><span class="line">	snap, err := r.RaftLog.storage.Snapshot()</span><br><span class="line">	<span class="comment">// because snapshot is handled asynchronously, so we should check if snapshot is valid</span></span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err == ErrSnapshotTemporarilyUnavailable &#123;</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	r.msgs = <span class="built_in">append</span>(r.msgs, pb.Message&#123;</span><br><span class="line">		MsgType:  pb.MessageType_MsgSnapshot,</span><br><span class="line">		From:     r.id,</span><br><span class="line">		To:       to,</span><br><span class="line">		Term:     r.Term,</span><br><span class="line">		Snapshot: &amp;snap,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// avoid snapshot is sent too frequently</span></span><br><span class="line">	r.Prs[to].Next = snap.Metadata.Index + <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意，在发送Snapshot成功之后，可以直接在leader更新目标节点的Next，避免需要频繁发送snapshot造成较高的带宽占用。</p>
+</blockquote>
+<p>‍</p>
+<h2 id="在raftstore中实现"><a href="#在raftstore中实现" class="headerlink" title="在raftstore中实现"></a>在raftstore中实现</h2><h3 id="processAdminRequest"><a href="#processAdminRequest" class="headerlink" title="processAdminRequest"></a>processAdminRequest</h3><p>根据文档和之前的分析，需要在<code>process</code>​的逻辑中增加对<code>AdminCmdType_CompactLog</code>​这一消息的处理，不同于普通的<code>Request</code>​，它的类型是<code>AdminRequest</code>​，要分开处理。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *peerMsgHandler)</span></span> processAdminRequest(entry *eraftpb.Entry, cmd *raft_cmdpb.RaftCmdRequest)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *peerMsgHandler)</span></span> process(entry *eraftpb.Entry) &#123;</span><br><span class="line">	cmd := &amp;raft_cmdpb.RaftCmdRequest&#123;&#125;</span><br><span class="line">	cmd.Unmarshal(entry.Data)</span><br><span class="line">	<span class="keyword">if</span> cmd.AdminRequest != <span class="literal">nil</span> &#123;</span><br><span class="line">		d.processAdminRequest(entry, cmd)</span><br><span class="line">	&#125;</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对该消息的处理流程，文档中说明的比较详细，即先更新<code>applyState.TruncatedState</code>​的状态，然后通过接口<code>d.ScheduleCompactLog</code>​为 raftlog-gc worker 安排一个任务。Raftlog-gc worker 会异步完成实际的日志删除工作。</p>
+<p>‍</p>
+<h3 id="ApplySnapshot"><a href="#ApplySnapshot" class="headerlink" title="ApplySnapshot"></a>ApplySnapshot</h3><p>​<code>appluSnapshot</code>​即<code>peer_storage</code>​对于<code>Ready()</code>​获得的<code>snapshot</code>​进行实际应用，要做的事情基本上能根据前面的分析推出来：删除过时的数据（所有的数据）、更新各种状态、发送任务给region_worker进行实际应用。</p>
+<p>删除过时数据，根据注释可知是<code>ClearMeta</code>​和<code>ps.clearExtraData</code>​，所需要的参数也十分简单。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ps.clearMeta(kvWB, raftWB)</span><br><span class="line">ps.clearExtraData(snapData.Region)</span><br></pre></td></tr></table></figure>
+
+<p>更新peer_storage的内存状态，<code>RaftLocalState</code>​ 、<code>RaftApplyState</code>​和 <code>RegionLocalState</code>​。</p>
+<p>简要分析一下需要更新哪些状态，首先<code>snapshot.MetaData</code>​只有<code>Index、Term、ConfState</code>​三个字段。对于<code>RaftLocalState</code>​，很显然只要更新<code>LastIndex</code>​、<code>LastTerm</code>​（<code>HardState</code>​的更新在<code>ApplySnapshot</code>​的上层<code>SaveReadyState</code>​当中）。对于<code>RaftApplyState</code>​，<code>AppliedIndex</code>​肯定要更新到<code>meta.Index</code>​，<code>TruncatedState</code>​代表截断状态，同样有<code>Index、Term</code>​两个字段，很显然也要更新。文档中还指明“您还需要更新<code>PeerStorage.snapState</code>​到<code>snap.SnapState_Applying</code>​”。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> RaftApplyState <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Record the applied index of the state machine to make sure</span></span><br><span class="line">	<span class="comment">// not apply any index twice after restart.</span></span><br><span class="line">	AppliedIndex <span class="type">uint64</span> <span class="string">`protobuf:&quot;varint,1,opt,name=applied_index,json=appliedIndex,proto3&quot; json:&quot;applied_index,omitempty&quot;`</span></span><br><span class="line">	<span class="comment">// Record the index and term of the last raft log that have been truncated. (Used in 2C)</span></span><br><span class="line">	TruncatedState       *RaftTruncatedState <span class="string">`protobuf:&quot;bytes,2,opt,name=truncated_state,json=truncatedState&quot; json:&quot;truncated_state,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125;            <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>              <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>               <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是文档中提到的<code>RegionLocalState</code>​怎么更新？</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> PeerStorage <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// current region information of the peer</span></span><br><span class="line">	region *metapb.Region</span><br><span class="line">	<span class="comment">// current raft state of the peer</span></span><br><span class="line">	raftState *rspb.RaftLocalState</span><br><span class="line">	<span class="comment">// current apply state of the peer</span></span><br><span class="line">	applyState *rspb.RaftApplyState</span><br><span class="line"></span><br><span class="line">	<span class="comment">// current snapshot state</span></span><br><span class="line">	snapState snap.SnapState</span><br><span class="line">	<span class="comment">// regionSched used to schedule task to region worker</span></span><br><span class="line">	regionSched <span class="keyword">chan</span>&lt;- worker.Task</span><br><span class="line">	<span class="comment">// generate snapshot tried count</span></span><br><span class="line">	snapTriedCnt <span class="type">int</span></span><br><span class="line">	<span class="comment">// Engine include two badger instance: Raft and Kv</span></span><br><span class="line">	Engines *engine_util.Engines</span><br><span class="line">	<span class="comment">// Tag used for logging</span></span><br><span class="line">	Tag <span class="type">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据<code>PeerStorage</code>​定义，推断<code>metapb.Region</code>​即<code>RegionLocalState</code>​。在<code>Snapshot.MetaData</code>​中似乎没有找到与之相关的内容。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Region <span class="keyword">struct</span> &#123;</span><br><span class="line">	Id <span class="type">uint64</span> <span class="string">`protobuf:&quot;varint,1,opt,name=id,proto3&quot; json:&quot;id,omitempty&quot;`</span></span><br><span class="line">	<span class="comment">// Region key range [start_key, end_key).</span></span><br><span class="line">	StartKey             []<span class="type">byte</span>       <span class="string">`protobuf:&quot;bytes,2,opt,name=start_key,json=startKey,proto3&quot; json:&quot;start_key,omitempty&quot;`</span></span><br><span class="line">	EndKey               []<span class="type">byte</span>       <span class="string">`protobuf:&quot;bytes,3,opt,name=end_key,json=endKey,proto3&quot; json:&quot;end_key,omitempty&quot;`</span></span><br><span class="line">	RegionEpoch          *RegionEpoch <span class="string">`protobuf:&quot;bytes,4,opt,name=region_epoch,json=regionEpoch&quot; json:&quot;region_epoch,omitempty&quot;`</span></span><br><span class="line">	Peers                []*Peer      <span class="string">`protobuf:&quot;bytes,5,rep,name=peers&quot; json:&quot;peers,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125;     <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>       <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>        <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是在已经写好的代码当中，有一个<code>RaftSnapshotData</code>​类型的<code>snapData</code>​是将<code>Snapshot</code>​中的<code>Data</code>​解析后的数据，可以看到其中的<code>region</code>​数据，正是想要的。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> RaftSnapshotData <span class="keyword">struct</span> &#123;</span><br><span class="line">	Region               *metapb.Region <span class="string">`protobuf:&quot;bytes,1,opt,name=region&quot; json:&quot;region,omitempty&quot;`</span></span><br><span class="line">	FileSize             <span class="type">uint64</span>         <span class="string">`protobuf:&quot;varint,2,opt,name=file_size,json=fileSize,proto3&quot; json:&quot;file_size,omitempty&quot;`</span></span><br><span class="line">	Data                 []*KeyValue    <span class="string">`protobuf:&quot;bytes,3,rep,name=data&quot; json:&quot;data,omitempty&quot;`</span></span><br><span class="line">	Meta                 *SnapshotMeta  <span class="string">`protobuf:&quot;bytes,5,opt,name=meta&quot; json:&quot;meta,omitempty&quot;`</span></span><br><span class="line">	XXX_NoUnkeyedLiteral <span class="keyword">struct</span>&#123;&#125;       <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_unrecognized     []<span class="type">byte</span>         <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">	XXX_sizecache        <span class="type">int32</span>          <span class="string">`json:&quot;-&quot;`</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Apply the peer with given snapshot</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps *PeerStorage)</span></span> ApplySnapshot(snapshot *eraftpb.Snapshot, kvWB *engine_util.WriteBatch, raftWB *engine_util.WriteBatch) (*ApplySnapResult, <span class="type">error</span>) &#123;</span><br><span class="line">	log.Infof(<span class="string">&quot;%v begin to apply snapshot&quot;</span>, ps.Tag)</span><br><span class="line">	snapData := <span class="built_in">new</span>(rspb.RaftSnapshotData)</span><br><span class="line">	<span class="keyword">if</span> err := snapData.Unmarshal(snapshot.Data); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Hint: things need to do here including: update peer storage state like raftState and applyState, etc,</span></span><br><span class="line">	<span class="comment">// and send RegionTaskApply task to region worker through ps.regionSched, also remember call ps.clearMeta</span></span><br><span class="line">	<span class="comment">// and ps.clearExtraData to delete stale data</span></span><br><span class="line">	<span class="comment">// Your Code Here (2C).</span></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是想用<code>kvWB.SetMeta(meta.RegionStateKey(snapData.Region.Id), snapData.Region)</code>​来持久化时却发现<code>snapData.Region</code>​参数不匹配，<code>*rspb.RegionLocalState</code>​。</p>
+<p>后面在kv&#x2F;raftstore&#x2F;meta&#x2F;values.go找到了<code>WriteRegionState</code>​函数，正是我们想要的。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WriteRegionState</span><span class="params">(kvWB *engine_util.WriteBatch, region *metapb.Region, state rspb.PeerState)</span></span> &#123;</span><br><span class="line">	regionState := <span class="built_in">new</span>(rspb.RegionLocalState)</span><br><span class="line">	regionState.State = state</span><br><span class="line">	regionState.Region = region</span><br><span class="line">	kvWB.SetMeta(RegionStateKey(region.Id), regionState)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一个新的问题来了，之前不论是<code>RaftLocalState</code>​ 、<code>RaftApplyState</code>​还是<code>SnapState</code>​都是先在<code>PeerStorage</code>​内存中更新，再持久化，我们显然不能先对<code>RegionState</code>​持久化。</p>
+<p>那么如何在内存中更新<code>RegionState</code>​？</p>
+<p>在之前的分析当中以及文档当中都提到，需要“<strong>通过</strong>​<code>**PeerStorage.regionSched**</code>​<strong>发送</strong>​<code>**runner.RegionTaskApply**</code>​<strong>任务给到region_worker</strong>”，这里的<code>RegionTask</code>​是否可以理解为在内存中更新<code>RegionState</code>​呢？通过查看代码调用链<code>runner.RegionTaskApply</code>​-&gt;<code>Handle</code>​-&gt;<code>r.ctx.handleApply</code>​-&gt;<code>applySnap</code>​验证了这一想法。</p>
+<p>简单参考<code>func (ps *PeerStorage) Snapshot() (eraftpb.Snapshot, error)</code>​中的代码实现（能够注意到它没有等待snapshot的生成，直接返回了一个<code>ErrSnaoshotTemporarilyUnavailable</code>​，对应我们在raft模块中的处理）：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps *PeerStorage)</span></span> Snapshot() (eraftpb.Snapshot, <span class="type">error</span>) &#123;</span><br><span class="line">	...</span><br><span class="line">	ch := <span class="built_in">make</span>(<span class="keyword">chan</span> *eraftpb.Snapshot, <span class="number">1</span>)</span><br><span class="line">	ps.snapState = snap.SnapState&#123;</span><br><span class="line">		StateType: snap.SnapState_Generating,</span><br><span class="line">		Receiver:  ch,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// schedule snapshot generate task</span></span><br><span class="line">	ps.regionSched &lt;- &amp;runner.RegionTaskGen&#123;</span><br><span class="line">		RegionId: ps.region.GetId(),</span><br><span class="line">		Notifier: ch,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> snapshot, raft.ErrSnapshotTemporarilyUnavailable</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是此处不能直接返回，文档中指明了要“<code>wait until region worker finishes</code>​”。猜测是因为如果直接返回，raft节点可能在没有更新regionState的情况下发生错误。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// send RegionTaskApply task to region worker</span></span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>, <span class="number">1</span>)</span><br><span class="line">ps.regionSched &lt;- &amp;runner.RegionTaskApply&#123;</span><br><span class="line">	RegionId: snapData.Region.Id,</span><br><span class="line">	Notifier: ch,</span><br><span class="line">	SnapMeta: snapshot.Metadata,</span><br><span class="line">	StartKey: snapData.Region.GetStartKey(),</span><br><span class="line">	EndKey:   snapData.Region.GetEndKey(),</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// according to document, need to wait until region worker finishes</span></span><br><span class="line">&lt;-ch</span><br><span class="line"><span class="comment">// regionState update</span></span><br><span class="line">result := &amp;ApplySnapResult&#123;</span><br><span class="line">	PrevRegion: ps.region,</span><br><span class="line">	Region:     snapData.Region,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">meta.WriteRegionState(kvWB, snapData.Region, rspb.PeerState_Normal)</span><br><span class="line"><span class="keyword">return</span> result, <span class="literal">nil</span></span><br></pre></td></tr></table></figure>
+
+<p>‍</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>sszgwdk
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://sszgwdk.github.io/2024/05/10/tinykv_project2c_solution/" title="tinykv project2c思路">https://sszgwdk.github.io/2024/05/10/tinykv_project2c_solution/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/kv/" rel="tag"><i class="fa fa-tag"></i> kv</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"><i class="fa fa-tag"></i> 分布式系统</a>
+              <a href="/tags/raft/" rel="tag"><i class="fa fa-tag"></i> raft</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/05/08/tinykv_project2b_solution/" rel="prev" title="tinykv project2B思路">
+      <i class="fa fa-chevron-left"></i> tinykv project2B思路
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-text">问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Snapshot%E7%9A%84%E7%94%9F%E6%88%90"><span class="nav-text">Snapshot的生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Snapshot%E7%9A%84Apply"><span class="nav-text">Snapshot的Apply</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8Raft%E4%B8%AD%E5%AE%9E%E7%8E%B0"><span class="nav-text">在Raft中实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#leader%E8%8E%B7%E5%8F%96%E5%B9%B6%E5%8F%91%E9%80%81SnapShot"><span class="nav-text">leader获取并发送SnapShot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8raftstore%E4%B8%AD%E5%AE%9E%E7%8E%B0"><span class="nav-text">在raftstore中实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#processAdminRequest"><span class="nav-text">processAdminRequest</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ApplySnapshot"><span class="nav-text">ApplySnapshot</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="sszgwdk"
+      src="/images/lxq.jpg">
+  <p class="site-author-name" itemprop="name">sszgwdk</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">sszgwdk</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">32k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">29 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+   <div id="site-runtime">
+   <span class="post-meta-item-icon">
+     <i class="fa fa-clock-o"></i>
+   </span>
+   <span id="runtime"></span>
+ </div>
+ ​
+ <script language="javascript">
+   function isPC() {
+     var userAgentInfo = navigator.userAgent;
+     var agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod"];
+     for (var i = 0; i < agents.length; i++) {
+       if (userAgentInfo.indexOf(agents[i]) > 0) {
+         return false;
+       }
+     }
+     return true;
+   }
+ ​
+   function siteTime(openOnPC, start) {
+     window.setTimeout("siteTime(openOnPC, start)", 1000);
+     var seconds = 1000;
+     var minutes = seconds * 60;
+     var hours = minutes * 60;
+     var days = hours * 24;
+     var years = days * 365;
+ ​
+       start = new Date("2024-05-01 12:00:00 +0800");
+     var now = new Date();
+     var year = now.getFullYear();
+     var month = now.getMonth() + 1;
+     var date = now.getDate();
+     var hour = now.getHours();
+     var minute = now.getMinutes();
+     var second = now.getSeconds();
+     var diff = now - start;
+ ​
+     var diffYears = Math.floor(diff / years);
+     var diffDays = Math.floor((diff / days) - diffYears * 365);
+     var diffHours = Math.floor((diff - (diffYears * 365 + diffDays) * days) / hours);
+     var diffMinutes = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours) / minutes);
+     var diffSeconds = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours - diffMinutes * minutes) / seconds);
+ ​
+     if (openOnPC) {
+         if (diffYears == 0){
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffDays + " 天 " + diffHours + " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+         }else{
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffYears + " 年 " + diffDays + " 天 " + diffHours + " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+         }
+     } else {
+         if (y == 0){
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffDays + "天 " + diffHours + "小时 " + diffMinutes + "分钟 " + diffSeconds + "秒";
+         }else{
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffYears + "年 " + diffDays + "天 " + diffHours + "小时 " + diffMinutes + "分钟 " + diffSeconds + "秒";
+         }
+       
+     }
+   }
+ ​
+   var showOnMobile = false;
+   var openOnPC = isPC();
+   var start = new Date();
+   siteTime(openOnPC, start);
+ ​
+   if (!openOnPC && !showOnMobile) {
+     document.getElementById('site-runtime').style.display = 'none';
+   }
+ </script>
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='1' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>
