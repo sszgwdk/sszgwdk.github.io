@@ -812,6 +812,52 @@
       </tags>
   </entry>
   <entry>
+    <title>tinykv project3a思路</title>
+    <url>/2024/05/11/tinykv_project3a_solution/</url>
+    <content><![CDATA[<span id="more"></span>
+
+<p>在Raft层实现领导者转移和成员变更（<strong>虽然Raft层实现简单，但是存在很多细节问题需要注意，后面3B的测试问题一半都来自Raft层</strong>）</p>
+<h2 id="领导者转移"><a href="#领导者转移" class="headerlink" title="领导者转移"></a>领导者转移</h2><p>HandleTransferLeader</p>
+<ol>
+<li><p>检查目标节点是否在集群当中，如果不在直接返回</p>
+</li>
+<li><p>如果当前节点不是leader，转发给Leader后返回</p>
+</li>
+<li><p>r.leadTransferee &#x3D; m.From</p>
+</li>
+<li><p>接收该请求</p>
+<ol>
+<li>检查目标节点的日志是否最新，如果不是则<code>sendAppend</code>​，而后返回（等后续<code>HandleAppendResponse</code>​来进一步处理</li>
+<li>如果目标节点的日志已经最新，发送<code>TimeoutNow</code>​消息给它，让其立即开始选举；最后将leadTransferee置为None</li>
+</ol>
+</li>
+</ol>
+<p>HandleAppendResponse</p>
+<p>当转移的目标节点日志不是最新时，HandleTransferLeader不能立即发送<code>TimeoutNow</code>​消息，而是<code>sendAppend</code>​使目标日志最新，这时需要在HandleAppendResponse中增加发送<code>TimeoutNow</code>​和重置<code>r.leadTransferee</code>​的逻辑。</p>
+<blockquote>
+<p>注意，当<code>leaderTransferee != None</code>​时，即在领导这转移过程中，不接受Propose请求，避免循环。</p>
+</blockquote>
+<p>‍</p>
+<h2 id="成员变更"><a href="#成员变更" class="headerlink" title="成员变更"></a>成员变更</h2><p>Raft层的逻辑十分简单，主要是针对<code>r.Prs</code>​的修改。</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// addNode add a new node to raft group</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> addNode(id <span class="type">uint64</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (3A).</span></span><br><span class="line">	<span class="comment">// if exit</span></span><br><span class="line">	<span class="keyword">if</span> _, ok := r.Prs[id]; ok &#123;</span><br><span class="line">		r.PendingConfIndex = None</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	r.Prs[id] = &amp;Progress&#123;</span><br><span class="line">		Match: <span class="number">0</span>,</span><br><span class="line">		Next:  <span class="number">1</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	r.PendingConfIndex = None</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// removeNode remove a node from raft group</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> removeNode(id <span class="type">uint64</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (3A).</span></span><br><span class="line">	<span class="keyword">if</span> _, ok := r.Prs[id]; !ok &#123;</span><br><span class="line">		r.PendingConfIndex = None</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">delete</span>(r.Prs, id)</span><br><span class="line">	<span class="comment">// important: if leader, should update commit</span></span><br><span class="line">	<span class="keyword">if</span> r.State == StateLeader &#123;</span><br><span class="line">		r.tryUpdateCommit()</span><br><span class="line">	&#125;</span><br><span class="line">	r.PendingConfIndex = None</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>notice</p>
+<ol>
+<li>当<code>removeNode</code>​时，由于集群成员数量发生变化，Leader要尝试推进日志的提交</li>
+<li>PendingConfIndex是一个值得注意的变量。当其不为None时，代表目前正有confChange发生，不再接收新的confChange请求，因此要在<code>HandlePropose</code>​中做一定的检查。判断条件为<code>r.PendingConfIndex != None &amp;&amp; r.PendingConfIndex &gt; r.RaftLog.applied</code>​，代表存在尚未应用的confChange。</li>
+</ol>
+<p>‍</p>
+]]></content>
+      <categories>
+        <category>存储</category>
+      </categories>
+      <tags>
+        <tag>kv</tag>
+        <tag>分布式系统</tag>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Tinykv，启~动！！</title>
     <url>/2024/05/01/tinykv_start/</url>
     <content><![CDATA[<p>前段时间磕磕绊绊学习了Tinykv这个项目，通过所有测试就没再理了，现在觉得不能把工夫浪费了，因此写个Blog记录一下。</p>
