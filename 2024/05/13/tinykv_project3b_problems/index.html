@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"sszgwdk.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta property="og:type" content="article">
+<meta property="og:title" content="tinykv project3b疑难杂症">
+<meta property="og:url" content="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/index.html">
+<meta property="og:site_name" content="sszgwdk的博客">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/image-20240121115130-zowanex.png">
+<meta property="article:published_time" content="2024-05-13T12:47:00.000Z">
+<meta property="article:modified_time" content="2024-05-13T12:47:30.334Z">
+<meta property="article:author" content="sszgwdk">
+<meta property="article:tag" content="kv">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="raft">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/image-20240121115130-zowanex.png">
+
+<link rel="canonical" href="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>tinykv project3b疑难杂症 | sszgwdk的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="sszgwdk的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">sszgwdk的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lxq.jpg">
+      <meta itemprop="name" content="sszgwdk">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="sszgwdk的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          tinykv project3b疑难杂症
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-05-13 20:47:00 / 修改时间：20:47:30" itemprop="dateCreated datePublished" datetime="2024-05-13T20:47:00+08:00">2024-05-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%98%E5%82%A8/" itemprop="url" rel="index"><span itemprop="name">存储</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+            <div class="post-description"> </div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <span id="more"></span>
+
+<p>我在做tinykv这个课程的过程中，3b之前遇到的问题大多能在网上找到解决方法，因此也没怎么做记录；而3b由于引入了Multi Raft以及集群成员变更、Split Region等Admin命令，对很多细节处理要求严格，并且测试点会模拟丢包和网络隔离等异常情况，需要做较多额外的针对性处理，因此我在做的时候遇到了许多网上难以找到的问题，通过在海量日志中一步步跟踪才解决了它们。</p>
+<p>下面将对我在3b中遇到的疑难杂症及解决方法进行汇总。</p>
+<h2 id="SnapShot相关"><a href="#SnapShot相关" class="headerlink" title="SnapShot相关"></a>SnapShot相关</h2><h3 id="（1）Request-Timeout-1"><a href="#（1）Request-Timeout-1" class="headerlink" title="（1）Request Timeout-1"></a>（1）Request Timeout-1</h3><p>问题原因：当前节点有snapshot正在被应用时，收到新的snapshot没有过滤掉</p>
+<p>解决方法：当<code>r.RaftLog.pendingSnapshot != nil</code>​时不接受新的snapShot，并且不处理<code>Append</code>​消息。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> handleAppendEntries(m pb.Message) &#123;</span><br><span class="line">	<span class="keyword">if</span> r.RaftLog.pendingSnapshot != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> handleSnapshot(m pb.Message) &#123;</span><br><span class="line">	<span class="keyword">if</span> r.RaftLog.pendingSnapshot != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+
+<h3 id="（2）Request-Timeout-2"><a href="#（2）Request-Timeout-2" class="headerlink" title="（2）Request Timeout-2"></a>（2）Request Timeout-2</h3><p>问题原因：follower在处理append消息的时候，<code>prevLogIndex</code>​的条目在follower已经被Compact掉了（<strong>Leader当中反而没有被Compact，怪了</strong>），此时通过<code>RaftLog.Term()</code>​会返回错误，无法完成日志匹配动作，导致leader中记录的Match会保持不变，在集群中只有两个节点的情况下committed无法推进。</p>
+<p>解决方法：follower返回响应，令leader主动发送一个Snapshot给自己，我这里利用了<code>MsgAppendResponse</code>​中没有使用的<code>commit</code>​字段。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> ShouldSendSnapByCommit <span class="type">uint64</span> = <span class="number">123456</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> handleAppendEntries(m pb.Message) &#123;</span><br><span class="line">。。。</span><br><span class="line">	tTerm, terr := r.RaftLog.Term(m.Index)</span><br><span class="line">		<span class="comment">// debug</span></span><br><span class="line">		lastTerm, _ := r.RaftLog.Term(r.RaftLog.LastIndex())</span><br><span class="line">		<span class="keyword">if</span> terr != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.DPrintfRaft(<span class="string">&quot;node %d handleAppendEntries from %d failed, get term failed: %v\n&quot;</span>, r.id, m.From, terr)</span><br><span class="line">			log.DPrintfRaft(<span class="string">&quot;l.entries: %d, i: %d, l.dummyIndex: %d, l.lastIndex: %d\n&quot;</span>, <span class="built_in">len</span>(r.RaftLog.entries), m.Index, r.RaftLog.dummyIndex, r.RaftLog.LastIndex())</span><br><span class="line"></span><br><span class="line">			<span class="comment">// tell leader should send snapshot</span></span><br><span class="line">			r.msgs = <span class="built_in">append</span>(r.msgs, pb.Message&#123;</span><br><span class="line">				MsgType: pb.MessageType_MsgAppendResponse,</span><br><span class="line">				To:      m.From,</span><br><span class="line">				From:    r.id,</span><br><span class="line">				Term:    lastTerm,</span><br><span class="line">				Index:   <span class="number">0</span>,</span><br><span class="line">				Reject:  <span class="literal">true</span>,</span><br><span class="line">				Commit:  ShouldSendSnapByCommit,</span><br><span class="line">			&#125;)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">。。。</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> handleAppendResponse(m pb.Message) &#123;</span><br><span class="line">	<span class="keyword">if</span> m.Term &gt; r.Term &#123;</span><br><span class="line">		r.greaterTermRspNum += <span class="number">1</span></span><br><span class="line">		<span class="keyword">if</span> r.greaterTermRspNum &gt; GreaterTermRspThreshold &#123;</span><br><span class="line">			r.greaterTermRspNum = <span class="number">0</span></span><br><span class="line">			r.becomeFollower(m.Term, None)</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// r.becomeFollower(m.Term, None)</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// special handle for need to send snapshot</span></span><br><span class="line">	<span class="keyword">if</span> m.Commit == ShouldSendSnapByCommit &#123;</span><br><span class="line">		r.sendSnapshot(m.From)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">。。。</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>‍</p>
+<h2 id="TransferLeader相关"><a href="#TransferLeader相关" class="headerlink" title="TransferLeader相关"></a>TransferLeader相关</h2><h3 id="（1）Request-Timeout（选举冲突的问题）"><a href="#（1）Request-Timeout（选举冲突的问题）" class="headerlink" title="（1）Request Timeout（选举冲突的问题）"></a>（1）Request Timeout（选举冲突的问题）</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[RaftStore]: node[[region <span class="number">1</span>] <span class="number">2</span>] propose common request: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Put put:&lt;cf:<span class="string">&quot;default&quot;</span> key:<span class="string">&quot;2 00000053&quot;</span> value:<span class="string">&quot;x 2 53 y&quot;</span> &gt; &gt; , leader: <span class="number">2</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">2</span> is leader, but leadTransferee is not None, stop accept propose</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">2</span> tryUpdateCommit: <span class="built_in">len</span>(r.Prs) = <span class="number">2</span>, r.RaftLog.LastIndex() = <span class="number">584</span>, r.committed = <span class="number">583</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">2</span> transfer leader to <span class="number">1</span> success! sendTimeoutNow!</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [RaftStore]: -------------------------------------------------------------------------</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [RaftStore]: node[[region <span class="number">1</span>] <span class="number">2</span>] propose common request: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Snap snap:&lt;&gt; &gt; , leader: <span class="number">2</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">2</span> tryUpdateCommit: <span class="built_in">len</span>(r.Prs) = <span class="number">2</span>, r.RaftLog.LastIndex() = <span class="number">585</span>, r.committed = <span class="number">584</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32.433521</span> cluster.<span class="keyword">go</span>:<span class="number">200</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [Cluster] request err resp. err: message:<span class="string">&quot;raft proposal dropped&quot;</span> , req: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Put put:&lt;cf:<span class="string">&quot;default&quot;</span> key:<span class="string">&quot;1 00000062&quot;</span> value:<span class="string">&quot;x 1 62 y&quot;</span> &gt; &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32.433521</span> cluster.<span class="keyword">go</span>:<span class="number">200</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [Cluster] request err resp. err: message:<span class="string">&quot;raft proposal dropped&quot;</span> , req: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Put put:&lt;cf:<span class="string">&quot;default&quot;</span> key:<span class="string">&quot;4 00000046&quot;</span> value:<span class="string">&quot;x 4 46 y&quot;</span> &gt; &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32.433564</span> cluster.<span class="keyword">go</span>:<span class="number">200</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [Cluster] request err resp. err: message:<span class="string">&quot;raft proposal dropped&quot;</span> , req: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Put put:&lt;cf:<span class="string">&quot;default&quot;</span> key:<span class="string">&quot;2 00000053&quot;</span> value:<span class="string">&quot;x 2 53 y&quot;</span> &gt; &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [RaftStore]: node[[region <span class="number">1</span>] <span class="number">2</span>]: process common request: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; region_epoch:&lt;conf_ver:<span class="number">4</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Put put:&lt;cf:<span class="string">&quot;default&quot;</span> key:<span class="string">&quot;0 00000057&quot;</span> value:<span class="string">&quot;x 0 57 y&quot;</span> &gt; &gt; </span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span>, lastIndex: <span class="number">584</span>,preLogIndex: <span class="number">583</span>, preLogTerm: <span class="number">6</span>, <span class="built_in">len</span>(m.Entries): <span class="number">1</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span> success, conflictFlag: <span class="literal">true</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span>, lastIndex: <span class="number">584</span>,preLogIndex: <span class="number">583</span>, preLogTerm: <span class="number">6</span>, <span class="built_in">len</span>(m.Entries): <span class="number">1</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span> success, conflictFlag: <span class="literal">true</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span>, lastIndex: <span class="number">584</span>,preLogIndex: <span class="number">584</span>, preLogTerm: <span class="number">6</span>, <span class="built_in">len</span>(m.Entries): <span class="number">0</span></span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">22</span> <span class="number">07</span>:<span class="number">53</span>:<span class="number">32</span> [Raft]: node <span class="number">1</span> handleAppendEntries from <span class="number">2</span> success, conflictFlag: <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到，当Node 2<code>sendTimeOutNow</code>​给1之后，由于还是leader，且<code>leaderTransferee == None</code>​，能够propose新的entry，导致node 1发起选举之后，没办法得到选票，没办法当选，从而造成冲突。</p>
+<p>解决方法：leader在<code>sendTimeoutNow</code>​之后主动变为follower，从而不会接收到propose产生新的entry，目标节点能够顺利当选。</p>
+<p>‍</p>
+<h3 id="（2）TransferLeader的超时机制"><a href="#（2）TransferLeader的超时机制" class="headerlink" title="（2）TransferLeader的超时机制"></a>（2）TransferLeader的超时机制</h3><p>如果领导权转移的目标节点失联，会导致leader一直处于leadTransferee的状态，没办法propose entry，因此要为TransferLeader增加超时机制，我直接使用选举超时作为领导权转移的超时时间。TransferLeader成功后<code>becomefollower()</code>​会完成清零选举超时的工作。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> tickLeader() &#123;</span><br><span class="line">	<span class="comment">// special handle with leadTransforee</span></span><br><span class="line">	<span class="keyword">if</span> r.leadTransferee != None &#123;</span><br><span class="line">		r.electionElapsed += <span class="number">1</span></span><br><span class="line">		<span class="comment">// can&#x27;t transfer success before a ElectTimeout, give up</span></span><br><span class="line">		<span class="keyword">if</span> r.electionElapsed &gt;= r.randElectTimeout &#123;</span><br><span class="line">			r.leadTransferee = None</span><br><span class="line">			r.electionElapsed = <span class="number">0</span></span><br><span class="line">			r.randElectTimeout = r.electionTimeout + rand.Intn(r.electionTimeout)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+
+<p>‍</p>
+<p>‍</p>
+<h2 id="confChange相关"><a href="#confChange相关" class="headerlink" title="confChange相关"></a>confChange相关</h2><h3 id="（1）无法正确处理confChange命令"><a href="#（1）无法正确处理confChange命令" class="headerlink" title="（1）无法正确处理confChange命令"></a>（1）无法正确处理confChange命令</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">--- FAIL: TestBasicConfChange3B (<span class="number">6.34</span>s)</span><br><span class="line"><span class="built_in">panic</span>: have peer: id:<span class="number">2</span> store_id:<span class="number">2</span>  [recovered]</span><br><span class="line">	<span class="built_in">panic</span>: have peer: id:<span class="number">2</span> store_id:<span class="number">2</span></span><br></pre></td></tr></table></figure>
+
+<p>错误原因：ConfChange条目中的数据不正确</p>
+<p>Solution：在Propose中，针对 ConfChange 请求的序列化和反序列化方式与其他请求不同</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ctx, marErr := msg.Marshal()</span><br><span class="line"><span class="keyword">if</span> marErr != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="built_in">panic</span>(marErr)</span><br><span class="line">&#125;</span><br><span class="line">err := d.RaftGroup.ProposeConfChange(eraftpb.ConfChange&#123;</span><br><span class="line">	ChangeType: msg.AdminRequest.ChangePeer.ChangeType,</span><br><span class="line">	NodeId:     msg.AdminRequest.ChangePeer.Peer.Id,</span><br><span class="line">	Context:    ctx,			<span class="comment">// notice</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="（2）AddNode后-RequestTimeout（对于未初始化的Raft节点的处理）"><a href="#（2）AddNode后-RequestTimeout（对于未初始化的Raft节点的处理）" class="headerlink" title="（2）AddNode后 RequestTimeout（对于未初始化的Raft节点的处理）"></a>（2）AddNode后 RequestTimeout（对于未初始化的Raft节点的处理）</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-- FAIL: TestBasicConfChange3B (<span class="number">52.68</span>s)</span><br><span class="line"><span class="built_in">panic</span>: request timeout [recovered]</span><br><span class="line">	<span class="built_in">panic</span>: request timeout</span><br></pre></td></tr></table></figure>
+
+<p>错误原因：对于Raft节点不在集群当中（尚未初始化）的情况，屏蔽掉了<code>HeartBeat</code>​和<code>Snapshot</code>​消息，使得节点不能通过leader发送的Snapshot完成初始化，进而导致committed始终无法向前推进（<strong>由于新节点的原因无法满足“集群大多数”的条件</strong>），请求无法应用而超时。</p>
+<p>Solution：对于Raft节点不在集群当中（尚未初始化）的情况，只能屏蔽选举相关的消息。</p>
+<h3 id="（3）​-region-x-x-meta-corruption-detected​"><a href="#（3）​-region-x-x-meta-corruption-detected​" class="headerlink" title="（3）​[region x] x meta corruption detected​"></a>（3）​[region x] x meta corruption detected​</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2023</span>/<span class="number">12</span>/<span class="number">29</span> <span class="number">12</span>:<span class="number">16</span>:<span class="number">14</span> request err resp.</span><br><span class="line"><span class="built_in">panic</span>: [region <span class="number">1</span>] <span class="number">5</span> meta corruption detected</span><br><span class="line"></span><br><span class="line">goroutine <span class="number">321</span> [running]:</span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).destroyPeer(<span class="number">0xc17c9b9e10</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">975</span> +<span class="number">0x265</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).processConfChange(<span class="number">0xc17c9b9e10</span>, <span class="number">0xc17c924d50</span>?, <span class="number">0xc17c9b9aa0</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">253</span> +<span class="number">0x6de</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).process(<span class="number">0xc17c9b9e10</span>, <span class="number">0xc17c9b9c40</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">351</span> +<span class="number">0x199</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).HandleRaftReady(<span class="number">0xc17c9b9e10</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">450</span> +<span class="number">0x408</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*raftWorker).run(<span class="number">0xc000264920</span>, <span class="number">0xc000039440</span>, <span class="number">0x0</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raft_worker.<span class="keyword">go</span>:<span class="number">70</span> +<span class="number">0x439</span></span><br><span class="line">created by github.com/pingcap-incubator/tinykv/kv/raftstore.(*Raftstore).startWorkers</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raftstore.<span class="keyword">go</span>:<span class="number">271</span> +<span class="number">0x17b</span></span><br><span class="line">FAIL	github.com/pingcap-incubator/tinykv/kv/test_raftstore	<span class="number">2.015</span>s</span><br><span class="line">FAIL</span><br></pre></td></tr></table></figure>
+
+<p>根据报错信息可以找到出错的位置在<code>destroyPeer</code>​，出错的代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> _, ok := meta.regions[regionID]; !ok &#123;</span><br><span class="line">	<span class="built_in">panic</span>(d.Tag + <span class="string">&quot; meta corruption detected&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>出错原因：对于RemoveNode命令的apply，不需要对<code>storeMeta</code>​进行修改，<code>destoryPeer</code>​会负责对<code>storeMeta</code>​的修改。因此下列操作是不应该做的：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">d.ctx.storeMeta.Lock()</span><br><span class="line"><span class="built_in">delete</span>(d.ctx.storeMeta.regions, targetPeer.Id)</span><br><span class="line">d.ctx.storeMeta.regionRanges.Delete(&amp;regionItem&#123;region: region&#125;)</span><br><span class="line">d.ctx.storeMeta.Unlock()</span><br></pre></td></tr></table></figure>
+
+<p>Solution：在RemoveNode的Apply处理中去掉</p>
+<h3 id="（4）confChange-Request-TimeOut（propose成功，但是confChange无法添加到RaftLog当中）"><a href="#（4）confChange-Request-TimeOut（propose成功，但是confChange无法添加到RaftLog当中）" class="headerlink" title="（4）confChange Request TimeOut（propose成功，但是confChange无法添加到RaftLog当中）"></a>（4）confChange Request TimeOut（propose成功，但是confChange无法添加到RaftLog当中）</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">--- FAIL: TestConfChangeRecover3B (<span class="number">58.85</span>s)</span><br><span class="line"><span class="built_in">panic</span>: request timeout [recovered]</span><br><span class="line">	<span class="built_in">panic</span>: request timeout</span><br></pre></td></tr></table></figure>
+
+<p>错误原因：当<code>r.PendingConfIndex != None</code>​，会忽略所有新的confChange Entry而不报错，这就造成了能够<code>ProposeConfChange</code>​成功，但是Entry却没有append进去。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Raft)</span></span> appendEntries(entries ...*pb.Entry) &#123;</span><br><span class="line">	ents := <span class="built_in">make</span>([]pb.Entry, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">for</span> _, e := <span class="keyword">range</span> entries &#123;</span><br><span class="line">		<span class="keyword">if</span> e.EntryType == pb.EntryType_EntryConfChange &#123;</span><br><span class="line">			<span class="keyword">if</span> r.PendingConfIndex != None &#123;</span><br><span class="line">				<span class="keyword">continue</span></span><br><span class="line">			&#125;</span><br><span class="line">			r.PendingConfIndex = e.Index</span><br><span class="line">		&#125;</span><br><span class="line">		ents = <span class="built_in">append</span>(ents, pb.Entry&#123;</span><br><span class="line">			EntryType: e.EntryType,</span><br><span class="line">			Term:      e.Term,</span><br><span class="line">			Index:     e.Index,</span><br><span class="line">			Data:      e.Data,</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">	r.RaftLog.appendEntries(ents...)</span><br><span class="line">	r.Prs[r.id].Match = r.RaftLog.LastIndex()</span><br><span class="line">	r.Prs[r.id].Next = r.RaftLog.LastIndex() + <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>显然这个条件<code>r.PendingConfIndex != None</code>​是不合适的，错误地忽略了不该忽略的confChange Entry。</p>
+<p>正确的条件应该是：<code>r.PendingConfIndex != None &amp;&amp; r.PendingConfIndex &gt; r.RaftLog.applied</code>​，代表还有confChange Entry没有被Apply（已经Apply的显然可以忽略了）</p>
+<h3 id="（5）删除节点时会遇到-Request-timeout-问题"><a href="#（5）删除节点时会遇到-Request-timeout-问题" class="headerlink" title="（5）删除节点时会遇到 Request timeout 问题"></a>（5）删除节点时会遇到 Request timeout 问题</h3><p>观察日志，发现一直在进行选举</p>
+<p>​<img src="/2024/05/13/tinykv_project3b_problems/image-20240121115130-zowanex.png" alt="image">​</p>
+<p>解决参考：</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/Smith-Cruise/TinyKV-White-Paper/blob/main/Project3-MultiRaftKV.md">TinyKV-White-Paper&#x2F;Project3-MultiRaftKV.md at main · Smith-Cruise&#x2F;TinyKV-White-Paper (github.com)</a></p>
+<p>问题原因：只剩两个节点，然后被移除的那个节点正好是 Leader。因为网络是 unreliable，Leader 广播给另一个 Node 的心跳正好被丢了，也就是另一个节点的 commit 并不会被推进，也就是对方节点并不会执行 remove node 操作。而这一切 Leader 并不知道，它自己调用 <code>d.destroyPeer()</code>​ 已经销毁了。此时另一个节点并没有移除 Leader，它会发起选举，但是永远赢不了，因为需要收到被移除 Leader 的投票。</p>
+<p>白皮书提供的解决方法：</p>
+<ol>
+<li>在 propose 阶段，如果已经处于两节点，被移除的正好是 Leader，那么直接拒绝该 propose，并且发起 Transfer Leader 到另一个节点上。Client 到时候会重试 remove node 指令。</li>
+<li>在 apply 阶段 DestroyPeer 上面做一个保险（有必要，虽然用到的概率很低），让 Leader 在自己被 remove 前重复多次发送心跳到目标节点，尝试推动目标节点的 commit。重复多次是为了抵消测试用例的 unreliable</li>
+</ol>
+<p>我这里两个都实现了，不同的是第二个的保险措施我发送的是Append消息而不是心跳消息（我的Raft层实现中follower处理心跳没有推进Commit），并且根据我的测试，重复的次数为5已经够了。</p>
+<p>即使如此，仍然只是在概率上避免了这个问题，不能完美的解决。</p>
+<p>‍</p>
+<h2 id="Split相关"><a href="#Split相关" class="headerlink" title="Split相关"></a>Split相关</h2><h3 id="（1）Snap请求处理超时"><a href="#（1）Snap请求处理超时" class="headerlink" title="（1）Snap请求处理超时"></a>（1）Snap请求处理超时</h3><p>日志显示总是snap消息的处理问题，总是报错<code>key not in region</code>​，而snap不涉及key。</p>
+<p>问题原因：出在propose上面，对common request进行<code>key in region</code>​检查时应该跳过<code>Snap request</code>​，而这里忘记跳过了。</p>
+<p>解决方法：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// check if key in region</span></span><br><span class="line"><span class="keyword">for</span> _, req := <span class="keyword">range</span> msg.Requests &#123;</span><br><span class="line">	<span class="keyword">if</span> req.CmdType != raft_cmdpb.CmdType_Snap &#123;</span><br><span class="line">		<span class="keyword">if</span> err := util.CheckKeyInRegion(getRequestKey(req), d.Region()); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			cb.Done(ErrResp(err))</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="（2）key-xxx…-is-not-in-region-xx"><a href="#（2）key-xxx…-is-not-in-region-xx" class="headerlink" title="（2）key [xxx…] is not in region xx"></a>（2）key [xxx…] is not in region xx</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">panic</span>: key [<span class="number">49</span> <span class="number">55</span> <span class="number">32</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span>] is not in region id:<span class="number">1</span> end_key:<span class="string">&quot;13 00000001&quot;</span> region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">1</span> store_id:<span class="number">1</span> &gt; peers:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; peers:&lt;id:<span class="number">4</span> store_id:<span class="number">4</span> &gt; peers:&lt;id:<span class="number">5</span> store_id:<span class="number">5</span> &gt; </span><br><span class="line"></span><br><span class="line">goroutine <span class="number">327</span> [running]:</span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/storage/raft_storage.(*RegionIterator).Seek(<span class="number">0xc17cb84ed0</span>, &#123;<span class="number">0xc17cc01d50</span>, <span class="number">0xb</span>, <span class="number">0x10</span>?&#125;)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/storage/raft_storage/region_reader.<span class="keyword">go</span>:<span class="number">83</span> +<span class="number">0xec</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/test_raftstore.(*Cluster).Scan(<span class="number">0xb86019</span>?, &#123;<span class="number">0xc17cc01d50</span>, <span class="number">0xb</span>, <span class="number">0x10</span>&#125;, &#123;<span class="number">0xc17c6dddb0</span>, <span class="number">0xb</span>, <span class="number">0x20</span>&#125;)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/test_raftstore/cluster.<span class="keyword">go</span>:<span class="number">388</span> +<span class="number">0x322</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/test_raftstore.GenericTest.func1(<span class="number">0x11</span>, <span class="number">0x0</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/test_raftstore/test_test.<span class="keyword">go</span>:<span class="number">218</span> +<span class="number">0x533</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/test_raftstore.runClient(<span class="number">0x0</span>?, <span class="number">0x0</span>?, <span class="number">0x0</span>?, <span class="number">0x0</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/test_raftstore/test_test.<span class="keyword">go</span>:<span class="number">27</span> +<span class="number">0x78</span></span><br><span class="line">created by github.com/pingcap-incubator/tinykv/kv/test_raftstore.SpawnClientsAndWait</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/test_raftstore/test_test.<span class="keyword">go</span>:<span class="number">37</span> +<span class="number">0x85</span></span><br><span class="line">FAIL	github.com/pingcap-incubator/tinykv/kv/test_raftstore	<span class="number">6.645</span>s</span><br><span class="line">FAIL</span><br></pre></td></tr></table></figure>
+
+<p>问题原因分析：报错是由Scan操作（对应Snap命令）引起的，Seek()函数产生的报错，错误原因是key不在该region中。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(it *RegionIterator)</span></span> Seek(key []<span class="type">byte</span>) &#123;</span><br><span class="line">	<span class="keyword">if</span> err := util.CheckKeyInRegion(key, it.region); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	it.iter.Seek(key)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>猜想哪些情况会导致上述错误的发生：</p>
+<ol>
+<li>处理Snap命令时<code>region := c.GetRegion(key)</code>​获取了错误的region（这种情况有可能是在更新region后，没有及时告知Scheduler）</li>
+<li>目标region在请求过程中发生了变化，导致错误产生（然而Snap请求不包含key字段，没办法在raftStore中通过<code>checkKeyInRegion</code>​检查，所以为了避免Snap的key错误，当region发生变化时，清空所有proposals么？？）</li>
+</ol>
+<p>再仔细打印和观察日志</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03</span> [RaftStore]: process common request: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Snap snap:&lt;&gt; &gt; </span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03</span> [RaftStore]: process common request: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Snap snap:&lt;&gt; &gt; </span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03</span> [RaftStore]: process admin request: Split</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03.477082</span> cluster.<span class="keyword">go</span>:<span class="number">204</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [Cluster] kv/test_raftstore/cluster.<span class="keyword">go</span>: request success. req: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Snap snap:&lt;&gt; &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03.477110</span> cluster.<span class="keyword">go</span>:<span class="number">204</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [Cluster] kv/test_raftstore/cluster.<span class="keyword">go</span>: request success. req: header:&lt;region_id:<span class="number">1</span> peer:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">1</span> &gt; &gt; requests:&lt;cmd_type:Snap snap:&lt;&gt; &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03.477145</span> region_reader.<span class="keyword">go</span>:<span class="number">84</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] seek key [<span class="number">51</span> <span class="number">32</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span>] in region <span class="number">1</span> failed: key [<span class="number">51</span> <span class="number">32</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span>] is not in region id:<span class="number">1</span> end_key:<span class="string">&quot;18 00000000&quot;</span> region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">1</span> store_id:<span class="number">1</span> &gt; peers:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; peers:&lt;id:<span class="number">4</span> store_id:<span class="number">4</span> &gt; peers:&lt;id:<span class="number">5</span> store_id:<span class="number">5</span> &gt; [<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">04</span> <span class="number">17</span>:<span class="number">23</span>:<span class="number">03.477158</span> region_reader.<span class="keyword">go</span>:<span class="number">84</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] seek key [<span class="number">56</span> <span class="number">32</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span>] in region <span class="number">1</span> failed: key [<span class="number">56</span> <span class="number">32</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span> <span class="number">48</span>] is not in region id:<span class="number">1</span> end_key:<span class="string">&quot;18 00000000&quot;</span> region_epoch:&lt;conf_ver:<span class="number">1</span> version:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">1</span> store_id:<span class="number">1</span> &gt; peers:&lt;id:<span class="number">2</span> store_id:<span class="number">2</span> &gt; peers:&lt;id:<span class="number">3</span> store_id:<span class="number">3</span> &gt; peers:&lt;id:<span class="number">4</span> store_id:<span class="number">4</span> &gt; peers:&lt;id:<span class="number">5</span> store_id:<span class="number">5</span> &gt; [<span class="number">0</span>m</span><br></pre></td></tr></table></figure>
+
+<p>发现错误原因是，已经处理完了Snap请求，但是之后执行了一个Split操作，导致region更新以后，再进行Scan就出错了，这是因为Snap响应中包含一个当前region的指针，Split之后就会导致<code>key not in region</code>​的错误。</p>
+<p>解决方法：在Snap命令之后执行的Split命令不应当造成影响，因此要在返回Snap响应时拷贝一份region，从而避免后面的命令对region的修改</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> raft_cmdpb.CmdType_Snap:</span><br><span class="line">	<span class="comment">// solve key not in region error: copy region</span></span><br><span class="line">	region := <span class="built_in">new</span>(metapb.Region)</span><br><span class="line">	err := util.CloneMsg(d.Region(), region)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// resp.Responses = []*raft_cmdpb.Response&#123;&#123;CmdType: raft_cmdpb.CmdType_Snap, Snap: &amp;raft_cmdpb.SnapResponse&#123;Region: d.Region()&#125;&#125;&#125;</span></span><br><span class="line">	resp.Responses = <span class="built_in">append</span>(resp.Responses, &amp;raft_cmdpb.Response&#123;CmdType: raft_cmdpb.CmdType_Snap, Snap: &amp;raft_cmdpb.SnapResponse&#123;Region: region&#125;&#125;)</span><br><span class="line">	p.cb.Txn = d.peerStorage.Engines.Kv.NewTransaction(<span class="literal">false</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="（3）test-timed-out-after-10m0s"><a href="#（3）test-timed-out-after-10m0s" class="headerlink" title="（3）test timed out after 10m0s"></a>（3）test timed out after 10m0s</h3><p>这个是困扰我最久的一个错误，在上一篇project3b思路中也提到了。</p>
+<p>错误原因是测试时间太久了。但是我根本不知道为什么这么久，一开始以为是选举太慢了，直到看到了<code>peer</code>​中两个成员：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// An inaccurate difference in region size since last reset.</span></span><br><span class="line"><span class="comment">// split checker is triggered when it exceeds the threshold, it makes split checker not scan the data very often</span></span><br><span class="line"><span class="comment">// (Used in 3B split)</span></span><br><span class="line">SizeDiffHint <span class="type">uint64</span></span><br><span class="line"><span class="comment">// Approximate size of the region.</span></span><br><span class="line"><span class="comment">// It&#x27;s updated everytime the split checker scan the data</span></span><br><span class="line"><span class="comment">// (Used in 3B split)</span></span><br><span class="line">ApproximateSize *<span class="type">uint64</span></span><br></pre></td></tr></table></figure>
+
+<p>原来split checker会依据<code>SizeDiffHint</code>​来判断region承载的数据量是否超出阈值，从而触发split操作。</p>
+<p>因此要做如下两个修改</p>
+<ol>
+<li><p>Apply Admin_Split完成后，要对<code>SizeDiffHint</code>​和<code>ApproximateSize</code>​更新</p>
+ <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// clear region size</span></span><br><span class="line">d.SizeDiffHint = <span class="number">0</span></span><br><span class="line">d.ApproximateSize = <span class="built_in">new</span>(<span class="type">uint64</span>)</span><br></pre></td></tr></table></figure></li>
+<li><p>Apply <code>put/delete</code>​时对<code>SizeDiffHint</code>​进行调整，在 <code>Put</code>​ 的时候，<code>SizeDiffHint</code>​ 加上 <code>key</code>​ 和 <code>value</code>​ 的大小；在 <code>Delete</code>​ 的时候，减去 <code>key</code>​ 的大小。</p>
+ <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> raft_cmdpb.CmdType_Put:</span><br><span class="line">	wb.SetCF(req.Put.Cf, req.Put.Key, req.Put.Value)</span><br><span class="line">	d.SizeDiffHint += <span class="type">uint64</span>(<span class="built_in">len</span>(req.Put.Key) + <span class="built_in">len</span>(req.Put.Value))</span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> raft_cmdpb.CmdType_Delete:</span><br><span class="line">	wb.DeleteCF(req.Delete.Cf, req.Delete.Key)</span><br><span class="line">	d.SizeDiffHint -= <span class="type">uint64</span>(<span class="built_in">len</span>(req.Delete.Key))</span><br></pre></td></tr></table></figure></li>
+</ol>
+<blockquote>
+<p>当时没仔细看白皮书，它里面有提到过这个问题：</p>
+<p>在 <code>nclient &gt;= 8 &amp;&amp; crash = true &amp;&amp; split = true</code>​ 这种条件下，测试在 Delete 阶段卡死问题，这是因为在 apply <code>CmdType_Put</code>​ 和 <code>CmdType_Delete</code>​ 请求的时候没有更新 <code>SizeDiffHint</code>​。因此需要在 <code>Put</code>​ 的时候，<code>SizeDiffHint</code>​ 加上 <code>key</code>​ 和 <code>value</code>​ 的大小；在 <code>Delete</code>​ 的时候，减去 <code>key</code>​ 的大小。</p>
+</blockquote>
+<h3 id="（4）runtime-error-index-out-of-range-1-with-length-1"><a href="#（4）runtime-error-index-out-of-range-1-with-length-1" class="headerlink" title="（4）runtime error: index out of range [1] with length 1"></a>（4）runtime error: index out of range [1] with length 1</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.882060</span> peer.<span class="keyword">go</span>:<span class="number">55</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [region <span class="number">1</span>] replicates peer with ID <span class="number">14</span>[<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.885097</span> peer_storage.<span class="keyword">go</span>:<span class="number">182</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [region <span class="number">1</span>] <span class="number">5</span> requesting snapshot[<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.984182</span> peer_storage.<span class="keyword">go</span>:<span class="number">341</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] [region <span class="number">1</span>] <span class="number">14</span> begin to apply snapshot[<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.984211</span> region_task.<span class="keyword">go</span>:<span class="number">93</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] begin apply snap data. [regionId: <span class="number">1</span>][<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.984223</span> region_task.<span class="keyword">go</span>:<span class="number">137</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] succeed in deleting data in <span class="keyword">range</span>. [regionId: <span class="number">1</span>, startKey: , endKey: <span class="number">32203030303030303033</span>][<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.996109</span> snap.<span class="keyword">go</span>:<span class="number">700</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] apply snapshot ingested <span class="number">1</span> tables[<span class="number">0</span>m</span><br><span class="line"><span class="number">2024</span>/<span class="number">02</span>/<span class="number">16</span> <span class="number">00</span>:<span class="number">50</span>:<span class="number">40.996163</span> region_task.<span class="keyword">go</span>:<span class="number">117</span>: [<span class="number">0</span>;<span class="number">37</span>m[info] applying <span class="built_in">new</span> data. [regionId: <span class="number">1</span>, timeTakes: <span class="number">11.892027</span>ms][<span class="number">0</span>m</span><br><span class="line"><span class="built_in">panic</span>: runtime <span class="type">error</span>: index out of <span class="keyword">range</span> [<span class="number">1</span>] with length <span class="number">1</span></span><br><span class="line"></span><br><span class="line">goroutine <span class="number">288</span> [running]:</span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).processAdminRequest(<span class="number">0xc191a41e10</span>, <span class="number">0xc00000000a</span>?, <span class="number">0x27</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">137</span> +<span class="number">0xe08</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).process(<span class="number">0xc191a41e10</span>, <span class="number">0xc224bbdea0</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">442</span> +<span class="number">0x347</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).HandleRaftReady(<span class="number">0xc191a41e10</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">677</span> +<span class="number">0x57f</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*raftWorker).run(<span class="number">0xc1051b3840</span>, <span class="number">0xc000194d20</span>, <span class="number">0x0</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raft_worker.<span class="keyword">go</span>:<span class="number">70</span> +<span class="number">0x439</span></span><br><span class="line">created by github.com/pingcap-incubator/tinykv/kv/raftstore.(*Raftstore).startWorkers</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raftstore.<span class="keyword">go</span>:<span class="number">271</span> +<span class="number">0x17b</span></span><br><span class="line">FAIL	github.com/pingcap-incubator/tinykv/kv/test_raftstore	<span class="number">6.899</span>s</span><br><span class="line">FAIL</span><br></pre></td></tr></table></figure>
+
+<p>报错点在应用Split命令处</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> raft_cmdpb.AdminCmdType_Split:</span><br><span class="line">	leftRegion := d.Region()</span><br><span class="line">	<span class="comment">// check</span></span><br><span class="line">	...</span><br><span class="line"></span><br><span class="line">	<span class="comment">// backup rawRegion for delete regionRange</span></span><br><span class="line">	rawRegion := <span class="built_in">new</span>(metapb.Region)</span><br><span class="line">	util.CloneMsg(leftRegion, rawRegion)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// create rightRegion</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// create rightRegion</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	rightRegion := <span class="built_in">new</span>(metapb.Region)</span><br><span class="line">	util.CloneMsg(leftRegion, rightRegion)</span><br><span class="line">	<span class="comment">// newPeers and split Region</span></span><br><span class="line">	newPeers := <span class="built_in">make</span>([]*metapb.Peer, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">for</span> i, peer := <span class="keyword">range</span> leftRegion.Peers &#123;</span><br><span class="line">		newPeers = <span class="built_in">append</span>(newPeers, &amp;metapb.Peer&#123;</span><br><span class="line">			Id:      split.NewPeerIds[i],</span><br><span class="line">			StoreId: peer.StoreId,</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// [StartKey, SplitKey) -&gt; leftRegion</span></span><br><span class="line">	<span class="comment">// [SplitKey, EndKey) -&gt; rightRegion</span></span><br><span class="line">	rightRegion.Id = split.NewRegionId</span><br><span class="line">	rightRegion.StartKey = split.SplitKey</span><br><span class="line">	rightRegion.Peers = newPeers</span><br><span class="line">	leftRegion.EndKey = split.SplitKey</span><br><span class="line"></span><br><span class="line">	leftRegion.RegionEpoch.Version += <span class="number">1</span></span><br><span class="line">	rightRegion.RegionEpoch.Version += <span class="number">1</span></span><br><span class="line">	...</span><br></pre></td></tr></table></figure>
+
+<p>这里默认<code>leftRegion.Peers</code>​与<code>split.NewPeerIds</code>​长度相同了，但实际可能没有，因此要修改，保证不会越界即可。</p>
+<p>我这里直接判定长度是否相等了，如果不相等直接返回，等客户端重试。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="built_in">len</span>(leftRegion.Peers) != <span class="built_in">len</span>(split.NewPeerIds) &#123;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="（5）find-no-peer-for-store-4-in-region-id-13-start-key-”0-00000011”-end-key-”2-00000004”"><a href="#（5）find-no-peer-for-store-4-in-region-id-13-start-key-”0-00000011”-end-key-”2-00000004”" class="headerlink" title="（5）find no peer for store 4 in region id:13 start_key:”0 00000011” end_key:”2 00000004”"></a>（5）find no peer for store 4 in region id:13 start_key:”0 00000011” end_key:”2 00000004”</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">panic</span>: find no peer <span class="keyword">for</span> store <span class="number">4</span> in region id:<span class="number">13</span> start_key:<span class="string">&quot;0 00000011&quot;</span> end_key:<span class="string">&quot;2 00000004&quot;</span> region_epoch:&lt;conf_ver:<span class="number">6</span> version:<span class="number">3</span> &gt; peers:&lt;id:<span class="number">14</span> store_id:<span class="number">2</span> &gt; </span><br><span class="line"></span><br><span class="line">goroutine <span class="number">271</span> [running]:</span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).processAdminRequest(<span class="number">0xc17bdbfe10</span>, <span class="number">0xc10000000a</span>?, <span class="number">0x27</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">187</span> +<span class="number">0xdfd</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).process(<span class="number">0xc17bdbfe10</span>, <span class="number">0xc20d840140</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">445</span> +<span class="number">0x347</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*peerMsgHandler).HandleRaftReady(<span class="number">0xc17bdbfe10</span>)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/peer_msg_handler.<span class="keyword">go</span>:<span class="number">680</span> +<span class="number">0x57f</span></span><br><span class="line">github.com/pingcap-incubator/tinykv/kv/raftstore.(*raftWorker).run(<span class="number">0xc000130b80</span>, <span class="number">0xc0002a51a0</span>, <span class="number">0x0</span>?)</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raft_worker.<span class="keyword">go</span>:<span class="number">70</span> +<span class="number">0x439</span></span><br><span class="line">created by github.com/pingcap-incubator/tinykv/kv/raftstore.(*Raftstore).startWorkers</span><br><span class="line">	/home/sszgwdk/project/tinykv/tinykv/kv/raftstore/raftstore.<span class="keyword">go</span>:<span class="number">271</span> +<span class="number">0x17b</span></span><br><span class="line">FAIL	github.com/pingcap-incubator/tinykv/kv/test_raftstore	<span class="number">7.331</span>s</span><br><span class="line">FAIL</span><br><span class="line">rm -rf /tmp<span class="comment">/*test-raftstore*</span></span><br></pre></td></tr></table></figure>
+
+<p>报错位置：Apply Split创建新的Peer</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Peer: creat and register and start</span></span><br><span class="line">newPeer, err := createPeer(d.ctx.store.Id, d.ctx.cfg, d.ctx.regionTaskSender, d.ctx.engine, rightRegion)</span><br><span class="line"><span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">	<span class="built_in">panic</span>(err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>出问题的地方与上一个错误一样，没有对<code>newPeers</code>​是否为空进行判断，也没有对<code>newPeers</code>​是否包含当前store进行检查。</p>
+<p>解决方法：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">newPeers := <span class="built_in">make</span>([]*metapb.Peer, <span class="number">0</span>)</span><br><span class="line">hasCurrentStore := <span class="literal">false</span></span><br><span class="line"><span class="keyword">if</span> <span class="built_in">len</span>(leftRegion.Peers) != <span class="built_in">len</span>(split.NewPeerIds) &#123;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i, peer := <span class="keyword">range</span> leftRegion.Peers &#123;</span><br><span class="line">	<span class="keyword">if</span> i &lt; <span class="built_in">len</span>(split.NewPeerIds) &#123;</span><br><span class="line">		newPeers = <span class="built_in">append</span>(newPeers, &amp;metapb.Peer&#123;</span><br><span class="line">			Id:      split.NewPeerIds[i],</span><br><span class="line">			StoreId: peer.StoreId,</span><br><span class="line">		&#125;)</span><br><span class="line">		<span class="keyword">if</span> peer.StoreId == d.ctx.store.GetId() &#123;</span><br><span class="line">			hasCurrentStore = <span class="literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> <span class="built_in">len</span>(newPeers) == <span class="number">0</span> || !hasCurrentStore &#123;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>‍</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>sszgwdk
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/" title="tinykv project3b疑难杂症">https://sszgwdk.github.io/2024/05/13/tinykv_project3b_problems/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/kv/" rel="tag"><i class="fa fa-tag"></i> kv</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"><i class="fa fa-tag"></i> 分布式系统</a>
+              <a href="/tags/raft/" rel="tag"><i class="fa fa-tag"></i> raft</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/05/12/tinykv_project3b_solution/" rel="prev" title="tinykv project3b思路">
+      <i class="fa fa-chevron-left"></i> tinykv project3b思路
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#SnapShot%E7%9B%B8%E5%85%B3"><span class="nav-text">SnapShot相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Request-Timeout-1"><span class="nav-text">（1）Request Timeout-1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89Request-Timeout-2"><span class="nav-text">（2）Request Timeout-2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TransferLeader%E7%9B%B8%E5%85%B3"><span class="nav-text">TransferLeader相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Request-Timeout%EF%BC%88%E9%80%89%E4%B8%BE%E5%86%B2%E7%AA%81%E7%9A%84%E9%97%AE%E9%A2%98%EF%BC%89"><span class="nav-text">（1）Request Timeout（选举冲突的问题）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89TransferLeader%E7%9A%84%E8%B6%85%E6%97%B6%E6%9C%BA%E5%88%B6"><span class="nav-text">（2）TransferLeader的超时机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#confChange%E7%9B%B8%E5%85%B3"><span class="nav-text">confChange相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89%E6%97%A0%E6%B3%95%E6%AD%A3%E7%A1%AE%E5%A4%84%E7%90%86confChange%E5%91%BD%E4%BB%A4"><span class="nav-text">（1）无法正确处理confChange命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89AddNode%E5%90%8E-RequestTimeout%EF%BC%88%E5%AF%B9%E4%BA%8E%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96%E7%9A%84Raft%E8%8A%82%E7%82%B9%E7%9A%84%E5%A4%84%E7%90%86%EF%BC%89"><span class="nav-text">（2）AddNode后 RequestTimeout（对于未初始化的Raft节点的处理）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89%E2%80%8B-region-x-x-meta-corruption-detected%E2%80%8B"><span class="nav-text">（3）​[region x] x meta corruption detected​</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89confChange-Request-TimeOut%EF%BC%88propose%E6%88%90%E5%8A%9F%EF%BC%8C%E4%BD%86%E6%98%AFconfChange%E6%97%A0%E6%B3%95%E6%B7%BB%E5%8A%A0%E5%88%B0RaftLog%E5%BD%93%E4%B8%AD%EF%BC%89"><span class="nav-text">（4）confChange Request TimeOut（propose成功，但是confChange无法添加到RaftLog当中）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%885%EF%BC%89%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9%E6%97%B6%E4%BC%9A%E9%81%87%E5%88%B0-Request-timeout-%E9%97%AE%E9%A2%98"><span class="nav-text">（5）删除节点时会遇到 Request timeout 问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Split%E7%9B%B8%E5%85%B3"><span class="nav-text">Split相关</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%881%EF%BC%89Snap%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86%E8%B6%85%E6%97%B6"><span class="nav-text">（1）Snap请求处理超时</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%882%EF%BC%89key-xxx%E2%80%A6-is-not-in-region-xx"><span class="nav-text">（2）key [xxx…] is not in region xx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%883%EF%BC%89test-timed-out-after-10m0s"><span class="nav-text">（3）test timed out after 10m0s</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%884%EF%BC%89runtime-error-index-out-of-range-1-with-length-1"><span class="nav-text">（4）runtime error: index out of range [1] with length 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%EF%BC%885%EF%BC%89find-no-peer-for-store-4-in-region-id-13-start-key-%E2%80%9D0-00000011%E2%80%9D-end-key-%E2%80%9D2-00000004%E2%80%9D"><span class="nav-text">（5）find no peer for store 4 in region id:13 start_key:”0 00000011” end_key:”2 00000004”</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="sszgwdk"
+      src="/images/lxq.jpg">
+  <p class="site-author-name" itemprop="name">sszgwdk</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">sszgwdk</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">50k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">46 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+   <div id="site-runtime">
+   <span class="post-meta-item-icon">
+     <i class="fa fa-clock-o"></i>
+   </span>
+   <span id="runtime"></span>
+ </div>
+ ​
+ <script language="javascript">
+   function isPC() {
+     var userAgentInfo = navigator.userAgent;
+     var agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod"];
+     for (var i = 0; i < agents.length; i++) {
+       if (userAgentInfo.indexOf(agents[i]) > 0) {
+         return false;
+       }
+     }
+     return true;
+   }
+ ​
+   function siteTime(openOnPC, start) {
+     window.setTimeout("siteTime(openOnPC, start)", 1000);
+     var seconds = 1000;
+     var minutes = seconds * 60;
+     var hours = minutes * 60;
+     var days = hours * 24;
+     var years = days * 365;
+ ​
+       start = new Date("2024-05-01 12:00:00 +0800");
+     var now = new Date();
+     var year = now.getFullYear();
+     var month = now.getMonth() + 1;
+     var date = now.getDate();
+     var hour = now.getHours();
+     var minute = now.getMinutes();
+     var second = now.getSeconds();
+     var diff = now - start;
+ ​
+     var diffYears = Math.floor(diff / years);
+     var diffDays = Math.floor((diff / days) - diffYears * 365);
+     var diffHours = Math.floor((diff - (diffYears * 365 + diffDays) * days) / hours);
+     var diffMinutes = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours) / minutes);
+     var diffSeconds = Math.floor((diff - (diffYears * 365 + diffDays) * days - diffHours * hours - diffMinutes * minutes) / seconds);
+ ​
+     if (openOnPC) {
+         if (diffYears == 0){
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffDays + " 天 " + diffHours + " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+         }else{
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffYears + " 年 " + diffDays + " 天 " + diffHours + " 小时 " + diffMinutes + " 分钟 " + diffSeconds + " 秒";
+         }
+     } else {
+         if (y == 0){
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffDays + "天 " + diffHours + "小时 " + diffMinutes + "分钟 " + diffSeconds + "秒";
+         }else{
+             document.getElementById("runtime").innerHTML = "本站已安全运行: " + diffYears + "年 " + diffDays + "天 " + diffHours + "小时 " + diffMinutes + "分钟 " + diffSeconds + "秒";
+         }
+       
+     }
+   }
+ ​
+   var showOnMobile = false;
+   var openOnPC = isPC();
+   var start = new Date();
+   siteTime(openOnPC, start);
+ ​
+   if (!openOnPC && !showOnMobile) {
+     document.getElementById('site-runtime').style.display = 'none';
+   }
+ </script>
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='1' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>
