@@ -21,23 +21,19 @@
   </script>
 
   <meta property="og:type" content="article">
-<meta property="og:title" content="tinykv project1思路">
-<meta property="og:url" content="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/index.html">
+<meta property="og:title" content="tinykv project3c思路">
+<meta property="og:url" content="https://sszgwdk.github.io/2024/05/23/tinykv_project3c_solution/index.html">
 <meta property="og:site_name" content="sszgwdk的博客">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/image-20231116204912-q20bqqq.png">
-<meta property="og:image" content="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/image-20231116204940-tsx3alt.png">
-<meta property="og:image" content="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/image-20231116213243-xxct0mn.png">
-<meta property="article:published_time" content="2024-05-02T04:55:37.000Z">
-<meta property="article:modified_time" content="2024-05-04T12:55:33.080Z">
+<meta property="article:published_time" content="2024-05-23T11:58:00.000Z">
+<meta property="article:modified_time" content="2024-05-23T11:58:23.364Z">
 <meta property="article:author" content="sszgwdk">
 <meta property="article:tag" content="kv">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="raft">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/image-20231116204912-q20bqqq.png">
 
-<link rel="canonical" href="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/">
+<link rel="canonical" href="https://sszgwdk.github.io/2024/05/23/tinykv_project3c_solution/">
 
 
 <script id="page-configurations">
@@ -50,7 +46,7 @@
   };
 </script>
 
-  <title>tinykv project1思路 | sszgwdk的博客</title>
+  <title>tinykv project3c思路 | sszgwdk的博客</title>
   
 
 
@@ -191,7 +187,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/">
+    <link itemprop="mainEntityOfPage" href="https://sszgwdk.github.io/2024/05/23/tinykv_project3c_solution/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/lxq.jpg">
@@ -204,7 +200,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          tinykv project1思路
+          tinykv project3c思路
         </h1>
 
         <div class="post-meta">
@@ -213,16 +209,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2024-05-02 12:55:37" itemprop="dateCreated datePublished" datetime="2024-05-02T12:55:37+08:00">2024-05-02</time>
+              <time title="创建时间：2024-05-23 19:58:00 / 修改时间：19:58:23" itemprop="dateCreated datePublished" datetime="2024-05-23T19:58:00+08:00">2024-05-23</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-05-04 20:55:33" itemprop="dateModified" datetime="2024-05-04T20:55:33+08:00">2024-05-04</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -246,14 +236,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.1k</span>
+              <span>482</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>1 分钟</span>
             </span>
             <div class="post-description"> </div>
 
@@ -267,43 +257,20 @@
 
       
         <span id="more"></span>
-<p>project1是一个热身项目，内容非常简单。项目文档中提到需要实现两部分的内容：（1）独立存储引擎；（2）原始kv服务处理程序。下面分别介绍一下基本的思路。</p>
-<h2 id="独立存储引擎"><a href="#独立存储引擎" class="headerlink" title="独立存储引擎"></a>独立存储引擎</h2><p>文档中提到该任务是对badgerDB的读写API的封装以支持列族（Column Family, CF）。通过运行<code>grep -rIi &quot;Your Code Here (1).&quot;</code>​发现需要编写的代码主要在<code>kv/storage/standalone_storage/standalone_storage.go</code>​，需要实现：</p>
+
+<p>3c要求实现region balance调度器，文档给了详细的算法步骤，相对比较容易。</p>
+<h2 id="processRegionHeartbeat"><a href="#processRegionHeartbeat" class="headerlink" title="processRegionHeartbeat"></a>processRegionHeartbeat</h2><p>每个region都会周期性的发送心跳给调度器，调度器需要首先检查RegionEpoch是否是最新的，如果是则进行更新，否则忽略。</p>
+<p>检查的逻辑是：</p>
 <ol>
-<li>定义<code>StandAloneStorage</code>​的数据结构</li>
-<li>定义<code>NewStandAloneStorage</code>​函数，根据参数<code>Config</code>​创建一个<code>StandAloneStorage</code>​对象</li>
-<li>填充<code>Start, Stop, Reader, Write</code>​四个函数</li>
+<li>如果该心跳对应的region id在调度器中存在，检查心跳中的RegionEpoch是否过时，如果过时则直接返回；</li>
+<li>如果该心跳对应的region id在调度器中找不到，扫描调度器中所有与心跳region有重叠的Regions。同样的方法对比RegionEpoch，如果Regions中存在一个region比心跳region新，那么就是过时的。</li>
 </ol>
-<h3 id="​StandAloneStorage​​​的定义和新建"><a href="#​StandAloneStorage​​​的定义和新建" class="headerlink" title="​StandAloneStorage​​​的定义和新建"></a>​<code>StandAloneStorage</code>​​​的定义和新建</h3><p>根据项目文档，engine_util包 （<code>kv/util/engine_util</code>​）中提供了所有的读写操作，即需要封装的API。但是我们并不知道它们在哪里，<code>kv/util/engine_util/doc.go</code>​中给出了一些信息：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">* engines: a data structure <span class="keyword">for</span> keeping engines required by unistore.</span><br><span class="line">* write_batch: code to batch writes into a single, atomic <span class="string">&#x27;transaction&#x27;</span>.</span><br><span class="line">* cf_iterator: code to iterate over a whole column family in badger.</span><br></pre></td></tr></table></figure>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// processRegionHeartbeat updates the region information.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *RaftCluster)</span></span> processRegionHeartbeat(region *core.RegionInfo) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (3C).</span></span><br><span class="line">	epoch := region.GetRegionEpoch()</span><br><span class="line">	<span class="keyword">if</span> epoch == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> errors.Errorf(<span class="string">&quot;region has no epoch&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// check if the region is in the cluster</span></span><br><span class="line">	rawRegion := c.GetRegion(region.GetID())</span><br><span class="line">	<span class="keyword">if</span> rawRegion != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="comment">// check if regionVersion is stale or not</span></span><br><span class="line">		stale := util.IsEpochStale(epoch, rawRegion.GetRegionEpoch())</span><br><span class="line">		<span class="keyword">if</span> stale &#123;</span><br><span class="line">			<span class="keyword">return</span> errors.Errorf(<span class="string">&quot;region is stale&quot;</span>)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// scan all regions that overlap with it</span></span><br><span class="line">		overlapRegions := c.ScanRegions(region.GetStartKey(), region.GetEndKey(), <span class="number">-1</span>)</span><br><span class="line">		<span class="keyword">for</span> _, oRegion := <span class="keyword">range</span> overlapRegions &#123;</span><br><span class="line">			stale := util.IsEpochStale(epoch, oRegion.GetRegionEpoch())</span><br><span class="line">			<span class="keyword">if</span> stale &#123;</span><br><span class="line">				<span class="keyword">return</span> errors.Errorf(<span class="string">&quot;region is stale&quot;</span>)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	c.putRegion(region)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="keyword">range</span> region.GetStoreIds() &#123;</span><br><span class="line">		c.updateStoreStatusLocked(i)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>从命名和描述可以看出engines是存储引擎、write_batch是将多个写入整合到一个batch中，cf_iterator则是在badger中迭代列族。</p>
-<p>再来看具体的文件。</p>
-<p>​<code>kv/util/engine_util/engines.go</code>​中定义了<code>Engines</code>​类，包含了两个<code>badger.DB</code>​的指针，还提供了<code>NewEngines</code>​、<code>WriteKV</code>​、<code>WriteRaft</code>​、<code>Close</code>​、<code>Destroy</code>​、<code>CreateDB</code>​这些函数。很显然<code>StandAloneStorage</code>​是对<code>Engines</code>​的封装，需要包含一个<code>engine_util.Engines</code>​成员，<code>NewStandAloneStorage</code>​需要进行<code>CreateDB</code>​和<code>NewEngines</code>​两个步骤。<code>Start</code>​不需要修改，<code>Stop</code>​需要调用<code>en.Close()</code>​;</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Engines <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Data, including data which is committed (i.e., committed across other nodes) and un-committed (i.e., only present</span></span><br><span class="line">	<span class="comment">// locally).</span></span><br><span class="line">	Kv     *badger.DB</span><br><span class="line">	KvPath <span class="type">string</span></span><br><span class="line">	<span class="comment">// Metadata used by Raft.</span></span><br><span class="line">	Raft     *badger.DB</span><br><span class="line">	RaftPath <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorage <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// Your Data Here (1).</span></span><br><span class="line">	en *engine_util.Engines</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Schedule"><a href="#Schedule" class="headerlink" title="Schedule"></a>Schedule</h2><p>region balance调度器目标是让集群中的stores所负载的region数目趋于平衡。一个调度命令通常就是将某个region从一个store移动到另一个store，因此Schedule的逻辑是先找到合适的region和目标store，然后创建一个<code>MovePeerOperator</code>​。详细算法官方文档给的很详细，实现代码如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> StoreInfoSlice []*core.StoreInfo</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s StoreInfoSlice)</span></span> Len() <span class="type">int</span>           &#123; <span class="keyword">return</span> <span class="built_in">len</span>(s) &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s StoreInfoSlice)</span></span> Swap(i, j <span class="type">int</span>)      &#123; s[i], s[j] = s[j], s[i] &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s StoreInfoSlice)</span></span> Less(i, j <span class="type">int</span>) <span class="type">bool</span> &#123; <span class="keyword">return</span> s[i].GetRegionSize() &gt; s[j].GetRegionSize() &#125; <span class="comment">// 降序</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *balanceRegionScheduler)</span></span> Schedule(cluster opt.Cluster) *operator.Operator &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (3C).</span></span><br><span class="line">	maxStoreDownTime := cluster.GetMaxStoreDownTime()</span><br><span class="line">	<span class="comment">// // Get suitable stores.</span></span><br><span class="line">	source := cluster.GetStores()</span><br><span class="line">	suitableStores := <span class="built_in">make</span>([]*core.StoreInfo, <span class="number">0</span>)</span><br><span class="line">	<span class="keyword">for</span> _, store := <span class="keyword">range</span> source &#123;</span><br><span class="line">		<span class="keyword">if</span> store.IsUp() &amp;&amp; store.DownTime() &lt; maxStoreDownTime &#123;</span><br><span class="line">			suitableStores = <span class="built_in">append</span>(suitableStores, store)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(suitableStores) &lt; <span class="number">2</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Sort stores by regionSize.</span></span><br><span class="line">	sort.Sort(StoreInfoSlice(suitableStores))</span><br><span class="line"></span><br><span class="line">	<span class="comment">// scan suitableStores to find the best store to move region from.</span></span><br><span class="line">	<span class="keyword">var</span> fromStore, toStore *core.StoreInfo</span><br><span class="line">	<span class="keyword">var</span> region *core.RegionInfo</span><br><span class="line">	<span class="keyword">for</span> _, store := <span class="keyword">range</span> suitableStores &#123;</span><br><span class="line">		<span class="keyword">var</span> regions core.RegionsContainer</span><br><span class="line">		cluster.GetPendingRegionsWithLock(store.GetID(), <span class="function"><span class="keyword">func</span><span class="params">(rc core.RegionsContainer)</span></span> &#123; regions = rc &#125;)</span><br><span class="line">		region = regions.RandomRegion(<span class="literal">nil</span>, <span class="literal">nil</span>)</span><br><span class="line">		<span class="keyword">if</span> region != <span class="literal">nil</span> &#123;</span><br><span class="line">			fromStore = store</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">		cluster.GetFollowersWithLock(store.GetID(), <span class="function"><span class="keyword">func</span><span class="params">(rc core.RegionsContainer)</span></span> &#123; regions = rc &#125;)</span><br><span class="line">		region = regions.RandomRegion(<span class="literal">nil</span>, <span class="literal">nil</span>)</span><br><span class="line">		<span class="keyword">if</span> region != <span class="literal">nil</span> &#123;</span><br><span class="line">			fromStore = store</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">		cluster.GetLeadersWithLock(store.GetID(), <span class="function"><span class="keyword">func</span><span class="params">(rc core.RegionsContainer)</span></span> &#123; regions = rc &#125;)</span><br><span class="line">		region = regions.RandomRegion(<span class="literal">nil</span>, <span class="literal">nil</span>)</span><br><span class="line">		<span class="keyword">if</span> region != <span class="literal">nil</span> &#123;</span><br><span class="line">			fromStore = store</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> region == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	storeIds := region.GetStoreIds()</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(storeIds) &lt; cluster.GetMaxReplicas() &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// scan suitableStores again to find the best store to move region to.</span></span><br><span class="line">	<span class="comment">// the best store is the one with the smallest regionSize.</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="built_in">len</span>(suitableStores) - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i-- &#123;</span><br><span class="line">		<span class="keyword">if</span> _, ok := storeIds[suitableStores[i].GetID()]; !ok &#123;</span><br><span class="line">			toStore = suitableStores[i]</span><br><span class="line">			<span class="keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> toStore == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// if diff &lt; 2*ApproximateSize, give up.</span></span><br><span class="line">	<span class="keyword">if</span> fromStore.GetRegionSize()-toStore.GetRegionSize() &lt; <span class="number">2</span>*region.GetApproximateSize() &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// create operator</span></span><br><span class="line">	newPeer, _ := cluster.AllocPeer(toStore.GetID())</span><br><span class="line">	op, _ := operator.CreateMovePeerOperator(<span class="string">&quot;balance-region&quot;</span>, cluster, region, operator.OpBalance, fromStore.GetID(), toStore.GetID(), newPeer.GetId())</span><br><span class="line">	<span class="keyword">return</span> op</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h3 id="Write"><a href="#Write" class="headerlink" title="Write"></a>Write</h3><p>关于Write的实现，文档告诉我们参数<code>ctx *kvrpcpb.Context</code>​暂时不用管，只剩下一个参数<code>batch []storage.Modify</code>​，可知是接口<code>Modify</code>​类型切片，通过观察类定义和相关函数发现，<code>Modify</code>​中可以是类型为<code>Put</code>​或<code>Delete</code>​类型的<code>Data</code>​，使用<code>.Key().Cf().Value()</code>​取对应的字段。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Modify <span class="keyword">struct</span> &#123;</span><br><span class="line">	Data <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Put <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key   []<span class="type">byte</span></span><br><span class="line">	Value []<span class="type">byte</span></span><br><span class="line">	Cf    <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Delete <span class="keyword">struct</span> &#123;</span><br><span class="line">	Key []<span class="type">byte</span></span><br><span class="line">	Cf  <span class="type">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Key() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Key</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Key</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Value() []<span class="type">byte</span> &#123;</span><br><span class="line">	<span class="keyword">if</span> putData, ok := m.Data.(Put); ok &#123;</span><br><span class="line">		<span class="keyword">return</span> putData.Value</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Modify)</span></span> Cf() <span class="type">string</span> &#123;</span><br><span class="line">	<span class="keyword">switch</span> m.Data.(<span class="keyword">type</span>) &#123;</span><br><span class="line">	<span class="keyword">case</span> Put:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Put).Cf</span><br><span class="line">	<span class="keyword">case</span> Delete:</span><br><span class="line">		<span class="keyword">return</span> m.Data.(Delete).Cf</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因此我们在<code>Write</code>​中需要做的应该是：声明一个空的<code>WriteBatch wb</code>，然后遍历参数<code>batch</code>​，提取每一个<code>key,val,cf</code>​，使用辅助函数添加到<code>wb</code>中；遍历结束后调用<code>en.WriteKV</code>​实现写入。</p>
-<p>通过阅读<code>kv/util/engine_util/write_batch.go</code>​可知要用到的辅助函数是类<code>WriteBatch</code>​的<code>SetCF</code>​和<code>DeleteCF</code>​接口。</p>
-<h3 id="Reader"><a href="#Reader" class="headerlink" title="Reader"></a>Reader</h3><p>​<code>Reader</code>​方法返回一个<code>StorageReader</code>​接口，要求实现<code>GetCF()、IterCF()、Close()</code>​三个方法</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> StorageReader <span class="keyword">interface</span> &#123;</span><br><span class="line">	<span class="comment">// When the key doesn&#x27;t exist, return nil for the value</span></span><br><span class="line">	GetCF(cf <span class="type">string</span>, key []<span class="type">byte</span>) ([]<span class="type">byte</span>, <span class="type">error</span>)</span><br><span class="line">	IterCF(cf <span class="type">string</span>) engine_util.DBIterator</span><br><span class="line">	Close()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>文档中说应该使用<code>badger.Txn</code>​来实现<code>Reader</code>​函数，但是<code>badger.Txn</code>​并没有<code>GetCF()、IterCF()、Close()</code>​这三个方法，因此不能满足<code>StorageReader</code>​接口的要求（go语言接口<code>interface</code>的限制），我们要对其进行封装。</p>
-<p>我这里定义了一个<code>StandAloneStorageReader</code>​类，包含了一个<code>badger.Txn</code>​成员，分别使用<code>engine_util.GetCFFromTxn</code>​、<code>engine_util.NewCFIterator</code>​、<code>txn.Discard</code>​实现了<code>GetCF()、IterCF()、Close()</code>​。在<code>Reader</code>​中只需要调用<code>en.Kv.NewTransaction</code>​创建一个<code>txn</code>​，然后返回一个<code>StandAloneStorageReader</code>​即可。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *StandAloneStorage)</span></span> Reader(ctx *kvrpcpb.Context) (storage.StorageReader, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="comment">// Your Code Here (1).</span></span><br><span class="line">	txn := s.en.Kv.NewTransaction(<span class="literal">false</span>)</span><br><span class="line">	<span class="keyword">return</span> &amp;StandAloneStorageReader&#123;</span><br><span class="line">		txn: txn,</span><br><span class="line">	&#125;, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StandAloneStorageReader <span class="keyword">struct</span> &#123;</span><br><span class="line">	txn *badger.Txn</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="实现服务处理程序"><a href="#实现服务处理程序" class="headerlink" title="实现服务处理程序"></a>实现服务处理程序</h2><p>需要实现的代码在<code>kv/server/raw_api.go</code>​当中，需要实现<code>RawGet</code>​、<code>RawPut</code>​、<code>RawDelete</code>​、<code>RawScan</code>​。前三个都很简单，没有需要自己寻找或设计的数据结构，部分接口需要查找，不过都是可以根据参数和成员得到的。</p>
-<p>​<code>RawScan</code>​函数主要是要弄清它的功能：从<code>startkey</code>​开始，取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
-<p>这样就知道需要用<code>Reader</code>​的迭代器，首先<code>Seek</code>​到<code>StartKey</code>​的位置，然后取至多<code>limit</code>​个<code>kvPairs</code>​。</p>
-<p>​<code>iter</code>​的使用方式参考：<code>iter-&gt;Seek(StartKey)</code>​ –&gt;<code>iter-&gt;Valid()</code>​ –&gt;<code>iter.Next()</code>​</p>
-<h2 id="测试问题"><a href="#测试问题" class="headerlink" title="测试问题"></a>测试问题</h2><p>出现一个问题</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204912-q20bqqq.png" alt="image">​</p>
-<p>查看测试代码，发现当KeyNotFound时要求err返回nil</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116204940-tsx3alt.png" alt="image">​</p>
-<p>解决后成功通过！完成 project 1！</p>
-<p>​<img src="/2024/05/02/tinykv_project1_solution/image-20231116213243-xxct0mn.png" alt="image">​</p>
+<p>‍</p>
 
     </div>
 
@@ -319,7 +286,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/" title="tinykv project1思路">https://sszgwdk.github.io/2024/05/02/tinykv_project1_solution/</a>
+    <a href="https://sszgwdk.github.io/2024/05/23/tinykv_project3c_solution/" title="tinykv project3c思路">https://sszgwdk.github.io/2024/05/23/tinykv_project3c_solution/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -342,13 +309,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/05/01/tinykv_start/" rel="prev" title="Tinykv，启~动！！">
-      <i class="fa fa-chevron-left"></i> Tinykv，启~动！！
+    <a href="/2024/05/13/tinykv_project3b_problems/" rel="prev" title="tinykv project3b疑难杂症">
+      <i class="fa fa-chevron-left"></i> tinykv project3b疑难杂症
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2024/05/03/tinykv_project2a_solution/" rel="next" title="tinykv project2a思路">
-      tinykv project2a思路 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -407,7 +371,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8B%AC%E7%AB%8B%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E"><span class="nav-text">独立存储引擎</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E2%80%8BStandAloneStorage%E2%80%8B%E2%80%8B%E2%80%8B%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E6%96%B0%E5%BB%BA"><span class="nav-text">​StandAloneStorage​​​的定义和新建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Write"><span class="nav-text">Write</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reader"><span class="nav-text">Reader</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%9C%8D%E5%8A%A1%E5%A4%84%E7%90%86%E7%A8%8B%E5%BA%8F"><span class="nav-text">实现服务处理程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E9%97%AE%E9%A2%98"><span class="nav-text">测试问题</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#processRegionHeartbeat"><span class="nav-text">processRegionHeartbeat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Schedule"><span class="nav-text">Schedule</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
