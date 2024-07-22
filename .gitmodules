@@ -1,0 +1,9 @@
+[submodule "gokarna"]
+	path = gokarna
+	url = git@github.com:526avijitgupta/gokarna.git
+[submodule "themes/gokarna"]
+	path = themes/gokarna
+	url = git@github.com:526avijitgupta/gokarna.git
+[submodule "themes/LoveIt"]
+	path = themes/LoveIt
+	url = git@github.com:dillonzq/LoveIt.git
