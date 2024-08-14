@@ -1,25 +1,5 @@
----
-weight: 9
-title: "TinyKV Project 3C"
-slug: "tinykv_p3c"
-date: 2024-08-14T12:04:47+08:00
-lastmod: 2024-08-14T12:04:47+08:00
-draft: false
-author: "SszgwDk"
-authorLink: "https://sszgwdk.github.io"
-description: ""
-images: []
+# TinyKV Project 3C
 
-tags: ["raft", "kv", "tinykv"]
-categories: ["kv"]
-
-lightgallery: true
-
-toc:
-  auto: false
-showTableOfContents: true
-outdatedInfoWarning: true
----
 
 3c要求实现region balance调度器，文档给了详细的算法步骤，相对比较容易。
 
@@ -48,3 +28,4 @@ region balance调度器目标是让集群中的stores所负载的region数目趋
 
     1. 判断条件：如果`fromStore.GetRegionSize()-toStore.GetRegionSize() < 2*region.GetApproximateSize()`，表明两个store负载的region大小相近，此次移动没有必要
 5. `CreateMovePeerOperator`
+
