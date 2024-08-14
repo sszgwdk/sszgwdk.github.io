@@ -1,4 +1,4 @@
-baseURL = "https://sszgwdk.github.io/myblog"
+baseURL = "https://sszgwdk.github.io"
 
 # theme
 # 主题
@@ -128,7 +128,7 @@ publishDir = "public"
     [params.header.title]
       # URL of the LOGO
       # LOGO 的 URL
-      logo = "/lxq_round.jpg"
+      logo = "/images/lxq_round.jpg"
       # title name
       # 标题名称
       name = "SszgwDk"
@@ -205,7 +205,7 @@ publishDir = "public"
     noFavicon = false
     # modern SVG favicon to use in place of older style .png and .ico files
     # 更现代的 SVG 网站图标, 可替代旧的 .png 和 .ico 文件
-    svgFavicon = ""
+    svgFavicon = "favicon.svg"
     # Android browser theme color
     # Android 浏览器主题色
     themeColor = "#ffffff"
