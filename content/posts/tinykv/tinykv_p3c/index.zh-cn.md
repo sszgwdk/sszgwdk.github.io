@@ -4,7 +4,7 @@ title: "TinyKV Project 3C"
 slug: "tinykv_p3c"
 date: 2024-08-14T12:04:47+08:00
 lastmod: 2024-08-14T12:04:47+08:00
-draft: false
+draft: true
 author: "SszgwDk"
 authorLink: "https://sszgwdk.github.io"
 description: ""
