@@ -1,0 +1,664 @@
+<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>TinyKV Project 2B - SszgwDk</title><meta name=Description content="SszgwDk's Blog"><meta property="og:url" content="https://sszgwdk.github.io/myblog/posts/tinykv_p2b/">
+<meta property="og:site_name" content="SszgwDk"><meta property="og:title" content="TinyKV Project 2B"><meta property="og:description" content="Request执行流程和调用链分析 梳理tinykv中Request执行流程和调用链有助于理解project2B文档的要求和需要实现的逻辑，推"><meta property="og:locale" content="zh_CN"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-08-14T11:27:36+08:00"><meta property="article:modified_time" content="2024-08-14T12:57:25+08:00"><meta property="article:tag" content="Raft"><meta property="article:tag" content="Kv"><meta property="article:tag" content="Tinykv"><meta property="og:image" content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:title content="TinyKV Project 2B"><meta name=twitter:description content="Request执行流程和调用链分析 梳理tinykv中Request执行流程和调用链有助于理解project2B文档的要求和需要实现的逻辑，推"><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/><link rel=prev href=https://sszgwdk.github.io/myblog/posts/tinykv_p2b_translate/><link rel=next href=https://sszgwdk.github.io/myblog/posts/tinykv_p2c/><link rel=stylesheet href=/myblog/css/style.min.e318242ad90f61c3313bdf5cbace1116.css integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"TinyKV Project 2B","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/sszgwdk.github.io\/myblog\/posts\/tinykv_p2b\/"},"image":[{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/myblog\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"posts","keywords":"raft, kv, tinykv","wordcount":6356,"url":"https:\/\/sszgwdk.github.io\/myblog\/posts\/tinykv_p2b\/","datePublished":"2024-08-14T11:27:36+08:00","dateModified":"2024-08-14T12:57:25+08:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/myblog\/images\/avatar.png","width":1080,"height":1080}},"author":{"@type":"Person","name":"SszgwDk"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/myblog/ title=SszgwDk><img class="lazyload logo" src=/myblog/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/myblog/posts/>所有文章 </a><a class=menu-item href=/myblog/tags/>标签 </a><a class=menu-item href=/myblog/categories/>分类 </a><a class=menu-item href=/myblog/about/>关于 </a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i>
+</span></span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="menu-item language" title=选择语言><i class="fa fa-globe" aria-hidden=true></i>
+<select class=language-select id=language-select-desktop onchange="location=this.value"><option value=/myblog/posts/tinykv_p2b/ selected>简体中文</option></select></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/myblog/ title=SszgwDk><img class="lazyload logo" src=/myblog/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/myblog/posts/ title>所有文章</a><a class=menu-item href=/myblog/tags/ title>标签</a><a class=menu-item href=/myblog/categories/ title>分类</a><a class=menu-item href=/myblog/about/ title>关于</a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class=menu-item title=选择语言><i class="fa fa-globe fa-fw" aria-hidden=true></i>
+<select class=language-select onchange="location=this.value"><option value=/myblog/posts/tinykv_p2b/ selected>简体中文</option></select></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class="toc-content always-active" id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">TinyKV Project 2B</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=https://sszgwdk.github.io title=Author target=_blank rel="noopener noreffer author" class=author><i class="fas fa-user-circle fa-fw" aria-hidden=true></i>SszgwDk</a></span>&nbsp;<span class=post-category>收录于 <a href=/myblog/categories/kv/><i class="far fa-folder fa-fw" aria-hidden=true></i>Kv</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw" aria-hidden=true></i>&nbsp;<time datetime=2024-08-14>2024-08-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden=true></i>&nbsp;约 6356 字&nbsp;
+<i class="far fa-clock fa-fw" aria-hidden=true></i>&nbsp;预计阅读 13 分钟&nbsp;<span id=/myblog/posts/tinykv_p2b/ class=leancloud_visitors data-flag-title="TinyKV Project 2B">
+<i class="far fa-eye fa-fw" aria-hidden=true></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;次阅读
+</span>&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#request执行流程和调用链分析>Request执行流程和调用链分析</a><ul><li><a href=#1-server---raftstorage>1 Server -> RaftStorage</a></li><li><a href=#2-raftstorage---peer>2 RaftStorage -> Peer</a></li><li><a href=#3-peer---rawnode_raft>3 Peer -> RawNode_Raft</a></li><li><a href=#4-rawnode_raft---peer>4 RawNode_Raft -> Peer</a></li></ul></li><li><a href=#peerstorage>PeerStorage</a><ul><li><a href=#append实现>Append实现</a></li><li><a href=#savereadystate-实现>SaveReadyState 实现</a></li></ul></li><li><a href=#peermsghandler>PeerMsgHandler</a><ul><li><a href=#proposeraftcommand>ProposeRaftCommand</a></li></ul></li><li><a href=#handleraftready>HandleRaftReady</a><ul><li><a href=#process>process</a></li></ul></li></ul></nav></div></div><div class=content id=content><h2 id=request执行流程和调用链分析>Request执行流程和调用链分析</h2><p>梳理tinykv中Request执行流程和调用链有助于理解project2B文档的要求和需要实现的逻辑，推荐看一看Talent Plan学习营分享课的对应部分，里面对Request执行流程分析的很到位。</p><p><a href="https://learn.pingcap.cn/learner/player/510002;id=510002;classroomId=720002;rcoId=630196;courseDetailId=510001;learnerAttemptId=1714889943880" target=_blank rel="noopener noreffer">Talent Plan 2021 KV 学习营分享课 (pingcap.cn)</a></p><p>我这里就照搬一下原视频中的图片。</p><p>​<figure><a class=lightgallery href=/myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png title=image data-thumbnail=/myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png data-sub-html="<h2>Request执行流程</h2><p>image</p>"><img class=lazyload src=/myblog/svg/loading.min.svg data-src=/myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png data-srcset="/myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png, /myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png 1.5x, /myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png 2x" data-sizes=auto alt=/myblog/posts/tinykv_p2b/image-20240507201618-rk4gvqa.png width=776 height=543></a><figcaption class=image-caption>Request执行流程</figcaption></figure>​</p><p>‍</p><h3 id=1-server---raftstorage>1 Server -> RaftStorage</h3><p>当一个请求req到达时，首先Server对其进行一层封装传到RaftStorage。</p><p>server接口：proto/pkg/tinykvpb/tinykvpb.pb.go</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Server API for TinyKv service
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>type</span> <span class=nx>TinyKvServer</span> <span class=kd>interface</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// KV commands with mvcc/txn supported.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nf>KvGet</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>GetRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>GetResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvScan</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>ScanRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>ScanResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvPrewrite</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>PrewriteRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>PrewriteResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvCommit</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>CommitRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>CommitResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvCheckTxnStatus</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>CheckTxnStatusRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>CheckTxnStatusResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvBatchRollback</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>BatchRollbackRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>BatchRollbackResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>KvResolveLock</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>ResolveLockRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>ResolveLockResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// RawKV commands.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nf>RawGet</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawGetRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawGetResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>RawPut</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawPutRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawPutResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>RawDelete</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawDeleteRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawDeleteResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nf>RawScan</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawScanRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kvrpcpb</span><span class=p>.</span><span class=nx>RawScanResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Raft commands (tinykv &lt;-&gt; tinykv).
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nf>Raft</span><span class=p>(</span><span class=nx>TinyKv_RaftServer</span><span class=p>)</span> <span class=kt>error</span>
+</span></span><span class=line><span class=cl>  <span class=nf>Snapshot</span><span class=p>(</span><span class=nx>TinyKv_SnapshotServer</span><span class=p>)</span> <span class=kt>error</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Coprocessor
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nf>Coprocessor</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=o>*</span><span class=nx>coprocessor</span><span class=p>.</span><span class=nx>Request</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>coprocessor</span><span class=p>.</span><span class=nx>Response</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>server实现：kv/server/server.go</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>Server</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>storage</span> <span class=nx>storage</span><span class=p>.</span><span class=nx>Storage</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// (Used in 4B)
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>Latches</span> <span class=o>*</span><span class=nx>latches</span><span class=p>.</span><span class=nx>Latches</span>		<span class=c1>// 锁集合，实现多版本并发控制
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>  <span class=c1>// coprocessor API handler, out of course scope
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>copHandler</span> <span class=o>*</span><span class=nx>coprocessor</span><span class=p>.</span><span class=nx>CopHandler</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>目前主要需要看Storage，在此处使用的是kv/storage/raft_storage/raft_server.go中实现的<code>RaftStorage</code>​。</p><p>以它的<code>Write</code>​功能为例，首先将<code>batch</code>​中的<code>put、Get、Delete</code>​抽出来封装在<code>raft_cmdpb.Request</code>​中，再添加一些<code>header</code>​等打包成一个<code>RaftCommand</code>​发送给下层</p><p>​<code>RaftStorage</code>​就是Project2和Project3中需要实现的代码处理</p><h3 id=2-raftstorage---peer>2 RaftStorage -> Peer</h3><p>RaftStorage定义如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>RaftStorage</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>engines</span> <span class=o>*</span><span class=nx>engine_util</span><span class=p>.</span><span class=nx>Engines</span>
+</span></span><span class=line><span class=cl>  <span class=nx>config</span>  <span class=o>*</span><span class=nx>config</span><span class=p>.</span><span class=nx>Config</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>node</span>          <span class=o>*</span><span class=nx>raftstore</span><span class=p>.</span><span class=nx>Node</span>
+</span></span><span class=line><span class=cl>  <span class=nx>snapManager</span>   <span class=o>*</span><span class=nx>snap</span><span class=p>.</span><span class=nx>SnapManager</span>
+</span></span><span class=line><span class=cl>  <span class=nx>raftRouter</span>    <span class=o>*</span><span class=nx>raftstore</span><span class=p>.</span><span class=nx>RaftstoreRouter</span>
+</span></span><span class=line><span class=cl>  <span class=nx>raftSystem</span>    <span class=o>*</span><span class=nx>raftstore</span><span class=p>.</span><span class=nx>Raftstore</span>
+</span></span><span class=line><span class=cl>  <span class=nx>resolveWorker</span> <span class=o>*</span><span class=nx>worker</span><span class=p>.</span><span class=nx>Worker</span>
+</span></span><span class=line><span class=cl>  <span class=nx>snapWorker</span>    <span class=o>*</span><span class=nx>worker</span><span class=p>.</span><span class=nx>Worker</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>wg</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>RaftstoreRouter</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>router</span> <span class=o>*</span><span class=nx>router</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>router</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>peers</span>       <span class=nx>sync</span><span class=p>.</span><span class=nx>Map</span> <span class=c1>// regionID -&gt; peerState
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>peerSender</span>  <span class=kd>chan</span> <span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span>
+</span></span><span class=line><span class=cl>  <span class=nx>storeSender</span> <span class=kd>chan</span><span class=o>&lt;-</span> <span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>这里需要注意的是<code>RaftstoreRouter</code>​，它是对<code>router</code>​的封装。router中有两个channel，都是生产者，作为中心的消息路由。<code>RaftstoreRouter</code>​增加了两个意义更加明确的函数<code>SendTaftMessage</code>​、<code>SendRaftCommand</code>​，用于传递消息给<code>peer</code>​。调用<code>router</code>​的<code>send</code>​接口就会把Msg传递给<code>peerSender</code>​这个channel。</p><p>以上就是消息生产者的部分，接下来看消费者的部分。</p><p>​<code>Server</code>​传到<code>RaftStorage</code>​的消息分<code>kv</code>​和<code>raft</code>​，对应<code>RaftStorage</code>​封装后分别是<code>RaftCmd</code>​和<code>RaftMessage</code>​，经过<code>Rounter</code>​，<code>RaftCmd</code>​会走到<code>RatfWorker</code>​（peer层前面专门处理Msg）里面，<code>RaftMessage</code>​会给到<code>StoreWorker</code>​，它会做一些region上的处理，同时把Msg再送到<code>RaftWoker</code>​里面去。</p><p>kv/raftstore/raft_worker.go：<code>raftWorker</code>​作为消费者，可以看到在初始创建的时候会拿到<code>router</code>​的<code>peerSender</code>​channel</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>raftWorker</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>pr</span> <span class=o>*</span><span class=nx>router</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// receiver of messages should sent to raft, including:
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// * raft command from `raftStorage`
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// * raft inner messages from other peers sent by network
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>raftCh</span> <span class=kd>chan</span> <span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span>
+</span></span><span class=line><span class=cl>  <span class=nx>ctx</span>    <span class=o>*</span><span class=nx>GlobalContext</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>closeCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>newRaftWorker</span><span class=p>(</span><span class=nx>ctx</span> <span class=o>*</span><span class=nx>GlobalContext</span><span class=p>,</span> <span class=nx>pm</span> <span class=o>*</span><span class=nx>router</span><span class=p>)</span> <span class=o>*</span><span class=nx>raftWorker</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=o>&amp;</span><span class=nx>raftWorker</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>raftCh</span><span class=p>:</span> <span class=nx>pm</span><span class=p>.</span><span class=nx>peerSender</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>ctx</span><span class=p>:</span>    <span class=nx>ctx</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>pr</span><span class=p>:</span>     <span class=nx>pm</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>raftWorker</code>​跑起来之后会批量地取<code>peerSender</code>​中Msg，取了之后通过当前的PeerState生成<code>PeerMsgHandler</code>​来<code>HandleMsg</code>​。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>rw</span> <span class=o>*</span><span class=nx>raftWorker</span><span class=p>)</span> <span class=nf>run</span><span class=p>(</span><span class=nx>closeCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{},</span> <span class=nx>wg</span> <span class=o>*</span><span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=kd>var</span> <span class=nx>msgs</span> <span class=p>[]</span><span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span>
+</span></span><span class=line><span class=cl>  <span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>msgs</span> <span class=p>=</span> <span class=nx>msgs</span><span class=p>[:</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=o>&lt;-</span><span class=nx>closeCh</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>msg</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>msgs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>msgs</span><span class=p>,</span> <span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=nx>pending</span> <span class=o>:=</span> <span class=nb>len</span><span class=p>(</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nx>pending</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>msgs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>msgs</span><span class=p>,</span> <span class=o>&lt;-</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=nx>peerStateMap</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=kt>uint64</span><span class=p>]</span><span class=o>*</span><span class=nx>peerState</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>msg</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>msgs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>peerState</span> <span class=o>:=</span> <span class=nx>rw</span><span class=p>.</span><span class=nf>getPeerState</span><span class=p>(</span><span class=nx>peerStateMap</span><span class=p>,</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>RegionID</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=nx>peerState</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=nf>newPeerMsgHandler</span><span class=p>(</span><span class=nx>peerState</span><span class=p>.</span><span class=nx>peer</span><span class=p>,</span> <span class=nx>rw</span><span class=p>.</span><span class=nx>ctx</span><span class=p>).</span><span class=nf>HandleMsg</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>peerState</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>peerStateMap</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nf>newPeerMsgHandler</span><span class=p>(</span><span class=nx>peerState</span><span class=p>.</span><span class=nx>peer</span><span class=p>,</span> <span class=nx>rw</span><span class=p>.</span><span class=nx>ctx</span><span class=p>).</span><span class=nf>HandleRaftReady</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>因此消息传递的流程大致如下：</p><p>​<figure><a class=lightgallery href=/myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png title=image data-thumbnail=/myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png data-sub-html="<h2>消息传递流程</h2><p>image</p>"><img class=lazyload src=/myblog/svg/loading.min.svg data-src=/myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png data-srcset="/myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png, /myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png 1.5x, /myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png 2x" data-sizes=auto alt=/myblog/posts/tinykv_p2b/image-20240507202804-i9vjfjf.png width=652 height=666></a><figcaption class=image-caption>消息传递流程</figcaption></figure>​</p><h3 id=3-peer---rawnode_raft>3 Peer -> RawNode_Raft</h3><p>kv/raftstore/peer_msg_handler.go 就是在Project2中主要需要实现的代码文件。我们要实现的第一个func就是<code>proposeRaftCommand</code>​。此时由于请求还没走到Raft层，现在需要把它预先丢给Raft层，在经过共识之后才能实际地去应用。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>d</span> <span class=o>*</span><span class=nx>peerMsgHandler</span><span class=p>)</span> <span class=nf>HandleMsg</span><span class=p>(</span><span class=nx>msg</span> <span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>switch</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>Type</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeRaftMessage</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>raftMsg</span> <span class=o>:=</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>Data</span><span class=p>.(</span><span class=o>*</span><span class=nx>rspb</span><span class=p>.</span><span class=nx>RaftMessage</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nf>onRaftMsg</span><span class=p>(</span><span class=nx>raftMsg</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;%s handle raft message error %v&#34;</span><span class=p>,</span> <span class=nx>d</span><span class=p>.</span><span class=nx>Tag</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeRaftCmd</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>raftCMD</span> <span class=o>:=</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>Data</span><span class=p>.(</span><span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>MsgRaftCmd</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>proposeRaftCommand</span><span class=p>(</span><span class=nx>raftCMD</span><span class=p>.</span><span class=nx>Request</span><span class=p>,</span> <span class=nx>raftCMD</span><span class=p>.</span><span class=nx>Callback</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeTick</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>onTick</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeSplitRegion</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>split</span> <span class=o>:=</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>Data</span><span class=p>.(</span><span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>MsgSplitRegion</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nx>log</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;%s on split with %v&#34;</span><span class=p>,</span> <span class=nx>d</span><span class=p>.</span><span class=nx>Tag</span><span class=p>,</span> <span class=nx>split</span><span class=p>.</span><span class=nx>SplitKey</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>onPrepareSplitRegion</span><span class=p>(</span><span class=nx>split</span><span class=p>.</span><span class=nx>RegionEpoch</span><span class=p>,</span> <span class=nx>split</span><span class=p>.</span><span class=nx>SplitKey</span><span class=p>,</span> <span class=nx>split</span><span class=p>.</span><span class=nx>Callback</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeRegionApproximateSize</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>onApproximateRegionSize</span><span class=p>(</span><span class=nx>msg</span><span class=p>.</span><span class=nx>Data</span><span class=p>.(</span><span class=kt>uint64</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeGcSnap</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>gcSnap</span> <span class=o>:=</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>Data</span><span class=p>.(</span><span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>MsgGCSnap</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>onGCSnap</span><span class=p>(</span><span class=nx>gcSnap</span><span class=p>.</span><span class=nx>Snaps</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>message</span><span class=p>.</span><span class=nx>MsgTypeStart</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nf>startTicker</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>d</span> <span class=o>*</span><span class=nx>peerMsgHandler</span><span class=p>)</span> <span class=nf>proposeRaftCommand</span><span class=p>(</span><span class=nx>msg</span> <span class=o>*</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>RaftCmdRequest</span><span class=p>,</span> <span class=nx>cb</span> <span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>Callback</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>err</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nf>preProposeRaftCommand</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=nx>err</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Your Code Here (2B).
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=4-rawnode_raft---peer>4 RawNode_Raft -> Peer</h3><p>当日志条目被Raft层提交以后，根据<code>Project2A</code>​，<code>Peer</code>​会通过<code>RawNode.Ready()</code>​异步地获取已经被提交的条目进行应用。我们回到刚才kv/raftstore/raft_worker.go中<code>run</code>​函数，可以看到在调用<code>HandleMsg(msg)</code>​之后，会批量地生成<code>PeerMsgHandler</code>​来<code>HandleRaftReady()</code>​。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>rw</span> <span class=o>*</span><span class=nx>raftWorker</span><span class=p>)</span> <span class=nf>run</span><span class=p>(</span><span class=nx>closeCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{},</span> <span class=nx>wg</span> <span class=o>*</span><span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=kd>var</span> <span class=nx>msgs</span> <span class=p>[]</span><span class=nx>message</span><span class=p>.</span><span class=nx>Msg</span>
+</span></span><span class=line><span class=cl>  <span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>msgs</span> <span class=p>=</span> <span class=nx>msgs</span><span class=p>[:</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=o>&lt;-</span><span class=nx>closeCh</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>msg</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>msgs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>msgs</span><span class=p>,</span> <span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=nx>pending</span> <span class=o>:=</span> <span class=nb>len</span><span class=p>(</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nx>pending</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>msgs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>msgs</span><span class=p>,</span> <span class=o>&lt;-</span><span class=nx>rw</span><span class=p>.</span><span class=nx>raftCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=nx>peerStateMap</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=kt>uint64</span><span class=p>]</span><span class=o>*</span><span class=nx>peerState</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>msg</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>msgs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>peerState</span> <span class=o>:=</span> <span class=nx>rw</span><span class=p>.</span><span class=nf>getPeerState</span><span class=p>(</span><span class=nx>peerStateMap</span><span class=p>,</span> <span class=nx>msg</span><span class=p>.</span><span class=nx>RegionID</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=nx>peerState</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=nf>newPeerMsgHandler</span><span class=p>(</span><span class=nx>peerState</span><span class=p>.</span><span class=nx>peer</span><span class=p>,</span> <span class=nx>rw</span><span class=p>.</span><span class=nx>ctx</span><span class=p>).</span><span class=nf>HandleMsg</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>peerState</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>peerStateMap</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nf>newPeerMsgHandler</span><span class=p>(</span><span class=nx>peerState</span><span class=p>.</span><span class=nx>peer</span><span class=p>,</span> <span class=nx>rw</span><span class=p>.</span><span class=nx>ctx</span><span class=p>).</span><span class=nf>HandleRaftReady</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>我们实现的重点就是<code>HandleRaftReady()</code>​，这个函数执行的大致逻辑如下：</p><ol><li><p>首先判断有没有Ready，这需要调用Raft层的判断函数<code>HasReady()</code>​（raft/rawnode.go），如果没有的话就说明共识还没完成，如果有的话就会进行Apply</p></li><li><p>如果要进行Apply的话，首先需要保存memory states 到磁盘当中，需要实现<code>SaveReadyState()</code>​（kv/raftstore/peer_storage.go），<code>SaveReadyState</code>​会做两件事情：</p><ol><li>将当前的Raft日志持久化，把已经Ready，可以Apply的一些状态保存下来</li><li>保存snapshot（2C实现）</li></ol></li><li><p>接下来就是实际上去进行Apply的逻辑，对kv进行实际的写入读取等操作。</p></li><li><p>在此之后，我们就可以<code>Advance</code>​（raft/rawnode.go）了。这个我们在Project2A已经完成了，<code>Advance</code>​做的事情也就是在实际完成Apply之后，Raft层中的节点的<code>RaftLog</code>​中的<code>stable、applied</code>​进行更新，同时也要更新一下<code>RaftNode</code>​中的<code>prevSoftState</code>​、<code>prevHardState</code>​（用于后续的状态对比<code>HasReady</code>​）。</p></li></ol><p>‍</p><p>总结一下，我们在Project2B中需要实现Request流程中的以下几个环节：</p><ol><li>Propose，通过<code>peerMsgHandler.proposeRaftCommand</code>​向Raft层传递日志条目</li><li>获取Ready -> Stable log（对应kv/raftstore/peer_storage.go中的<code>PeerStorage.SaveReadyState()</code>​） -> Apply（同时CallBack）->Advance更新Raft节点状态，这些都是<code>peerMsgHandler.HandleRaftReady()</code>​需要实现的。</li></ol><p>‍</p><p>下面讲述Project2B的实现思路</p><h2 id=peerstorage>PeerStorage</h2><p>PeerStorage部分主要实现<code>SaveReadyState</code>​函数，对应Stable log环节，顾名思义，需要持久化一些数据。</p><p>根据文档，这个函数的作用是将<code>raft.Ready</code>​中更新的数据保存到 badger 中（即持久化），包括追加日志条目、保存 Raft HardState、应用Snapshot（2C）等。</p><h3 id=append实现>Append实现</h3><p>追加日志对应<code>PeerStorage.Append()</code>​，根据已有的注释，该函数将给定的条目Append到raftDB，并更新ps.raftState，还将删除永远不会提交的日志条目。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Append the given entries to the raft log and update ps.raftState also delete log entries that will
+</span></span></span><span class=line><span class=cl><span class=c1>// never be committed
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>ps</span> <span class=o>*</span><span class=nx>PeerStorage</span><span class=p>)</span> <span class=nf>Append</span><span class=p>(</span><span class=nx>entries</span> <span class=p>[]</span><span class=nx>eraftpb</span><span class=p>.</span><span class=nx>Entry</span><span class=p>,</span> <span class=nx>raftWB</span> <span class=o>*</span><span class=nx>engine_util</span><span class=p>.</span><span class=nx>WriteBatch</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Your Code Here (2B).
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>实际上就是封装好一个<code>WriteBatch</code>​，方便后续对<code>raftDB</code>​进行<code>WriteToDB</code>​，实现持久化。</p><p>执行步骤：</p><ol><li>​<code>if len(entries) == 0</code>​，返回</li><li>获取<code>stableLast := entries[len(entries)-1].Index</code>​，<code>prevLast, _ := ps.LastIndex()</code>​，分别代表目前需要持久化的最大Index，和已经持久化的最大Index。</li><li>更新当前peerStorage的raftState的<code>LastIndex</code>​和<code>LastTerm</code>​</li><li>遍历<code>entries</code>​，调用<code>raftWB.SetMeta</code>​实现Append</li><li>最后需要删除的条目对应索引<code>[stableLast + 1, preLast]</code>​，这些条目永远都不会提交（常见的一种情况是被覆盖掉了），通过调用<code>raftWB.DeleteMeta</code>​实现。</li></ol><h3 id=savereadystate-实现>SaveReadyState 实现</h3><p>这个函数实现比较简单，目前不用实现ApplySnapshot，因此按以下步骤：</p><ol><li>Append日志条目</li><li>更新<code>raftState.HardState</code>​</li><li>持久化日志条目和更新后的<code>raftState</code>​，也是通过<code>SetMeta</code>​实现</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>ps</span> <span class=o>*</span><span class=nx>PeerStorage</span><span class=p>)</span> <span class=nf>SaveReadyState</span><span class=p>(</span><span class=nx>ready</span> <span class=o>*</span><span class=nx>raft</span><span class=p>.</span><span class=nx>Ready</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>ApplySnapResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Hint: you may call `Append()` and `ApplySnapshot()` in this function
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// Your Code Here (2B/2C).
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>  <span class=c1>// 1. append
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>wb</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>engine_util</span><span class=p>.</span><span class=nx>WriteBatch</span><span class=p>{}</span>
+</span></span><span class=line><span class=cl>  <span class=nx>ps</span><span class=p>.</span><span class=nf>Append</span><span class=p>(</span><span class=nx>ready</span><span class=p>.</span><span class=nx>Entries</span><span class=p>,</span> <span class=nx>wb</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// 2. update hardstate and save raftState
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>!</span><span class=nx>raft</span><span class=p>.</span><span class=nf>IsEmptyHardState</span><span class=p>(</span><span class=nx>ready</span><span class=p>.</span><span class=nx>HardState</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>ps</span><span class=p>.</span><span class=nx>raftState</span><span class=p>.</span><span class=nx>HardState</span> <span class=p>=</span> <span class=o>&amp;</span><span class=nx>ready</span><span class=p>.</span><span class=nx>HardState</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=nx>wb</span><span class=p>.</span><span class=nf>SetMeta</span><span class=p>(</span><span class=nx>meta</span><span class=p>.</span><span class=nf>RaftStateKey</span><span class=p>(</span><span class=nx>ps</span><span class=p>.</span><span class=nx>region</span><span class=p>.</span><span class=nx>Id</span><span class=p>),</span> <span class=nx>ps</span><span class=p>.</span><span class=nx>raftState</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// 3. write to DB
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>ps</span><span class=p>.</span><span class=nx>Engines</span><span class=p>.</span><span class=nf>WriteRaft</span><span class=p>(</span><span class=nx>wb</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>‍</p><h2 id=peermsghandler>PeerMsgHandler</h2><p>根据之前“Request执行流程和调用链分析”的描述，在<code>PeerMsgHandler</code>​中我们要实现<code>proposeRaftCommand</code>​和<code>HandleRaftReady</code>​两个函数。</p><h3 id=proposeraftcommand>ProposeRaftCommand</h3><p>​<code>proposeRaftCommand</code>​是将上层的<code>RaftCmdRequest</code>​打包传递给Raft节点。</p><p>根据文档提示，要对以下两个错误进行处理：</p><ul><li>ErrNotLeader：在追随者上Propose raftCmd。因此，使用它来让客户端尝试其他peer。</li><li>ErrStaleCommand：可能是由于领导者更改，某些日志未提交并被新的领导者日志覆盖。但客户并不知道这一点，仍在等待响应。因此，您应该返回此命令以让客户端知道并重试该命令。</li></ul><p>很显然这里我们只要处理<code>ErrNotLeader</code>​这一错误，通过CallBack函数来返回错误响应。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=k>if</span> <span class=p>!</span><span class=nx>d</span><span class=p>.</span><span class=nf>IsLeader</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>leader</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nf>getPeerFromCache</span><span class=p>(</span><span class=nx>d</span><span class=p>.</span><span class=nf>LeaderId</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>  <span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>util</span><span class=p>.</span><span class=nx>ErrNotLeader</span><span class=p>{</span><span class=nx>RegionId</span><span class=p>:</span> <span class=nx>d</span><span class=p>.</span><span class=nx>regionId</span><span class=p>,</span> <span class=nx>Leader</span><span class=p>:</span> <span class=nx>leader</span><span class=p>}))</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>不过以上部分其实已经在<code>d.preProposeRaftCommand(msg)</code>​事先做好了。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>d</span> <span class=o>*</span><span class=nx>peerMsgHandler</span><span class=p>)</span> <span class=nf>proposeRaftCommand</span><span class=p>(</span><span class=nx>msg</span> <span class=o>*</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>RaftCmdRequest</span><span class=p>,</span> <span class=nx>cb</span> <span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>Callback</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>err</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nf>preProposeRaftCommand</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=nx>err</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Your Code Here (2B).
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>return</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>接下来我们要在<code>peer</code>​当中保存callback，于是查看<code>peer</code>​结构体找到了关键的结构<code>proposals</code>​，注释也说得非常直白。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Record the callback of the proposals
+</span></span></span><span class=line><span class=cl><span class=c1>// (Used in 2B)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>proposals</span> <span class=p>[]</span><span class=o>*</span><span class=nx>proposal</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>proposal</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// index + term for unique identification
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>index</span> <span class=kt>uint64</span>
+</span></span><span class=line><span class=cl>  <span class=nx>term</span>  <span class=kt>uint64</span>
+</span></span><span class=line><span class=cl>  <span class=nx>cb</span>    <span class=o>*</span><span class=nx>message</span><span class=p>.</span><span class=nx>Callback</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>相关的函数在peer_msg_handler.go里面也为我们封装好了，直接调用即可</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=nx>proposal</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>proposal</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>index</span><span class=p>:</span> <span class=nx>d</span><span class=p>.</span><span class=nf>nextProposalIndex</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>  <span class=nx>term</span><span class=p>:</span>  <span class=nx>d</span><span class=p>.</span><span class=nf>Term</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>  <span class=nx>cb</span><span class=p>:</span>    <span class=nx>cb</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>紧接着Propose的逻辑，之前在2A部分提到过，上层的条目都是通过<code>RawNode.Propose()</code>​传递给Raft模块，因此这里是<code>d.RaftGroup.Propose</code>​，但是参数应该是<code>[]byte</code>​，所以这里需要对<code>msg</code>​做一些处理，在<code>RaftCmdRequest</code>​类下查找辅助函数，可以找到<code>Marshal</code>​正是我们需要的。完整代码如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl>  <span class=nx>proposal</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>proposal</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>index</span><span class=p>:</span> <span class=nx>d</span><span class=p>.</span><span class=nf>nextProposalIndex</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>    <span class=nx>term</span><span class=p>:</span>  <span class=nx>d</span><span class=p>.</span><span class=nf>Term</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cb</span><span class=p>:</span>    <span class=nx>cb</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=nx>data</span><span class=p>,</span> <span class=nx>marErr</span> <span class=o>:=</span> <span class=nx>msg</span><span class=p>.</span><span class=nf>Marshal</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nx>marErr</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=nx>marErr</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=nx>perr</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>RaftGroup</span><span class=p>.</span><span class=nf>Propose</span><span class=p>(</span><span class=nx>data</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nx>perr</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=nx>perr</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// log.DPrintf(&#34;kv/raftstore/peer_msg_handler.go: proposal: %v&#34;, proposal)
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>,</span> <span class=nx>proposal</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><blockquote><p>注意<code>d.proposals = append(d.proposals, proposal)</code>​最后再调用，有可能前面的一些环节出错，例如<code>Propose</code>​到了非Leader节点，这时应该直接通过回调返回错误的响应。</p></blockquote><h2 id=handleraftready>HandleRaftReady</h2><p>​<code>HandleRaftReady</code>​是获取Raft节点是否有Ready（即状态更新），然后把这些更新进行持久化和实际应用的函数。是整个project2B的重点。</p><p>文档中对于它的执行逻辑描述比较详细，还贴心地给出了处理流程：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=o>&lt;-</span><span class=nx>s</span><span class=p>.</span><span class=nx>Ticker</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>Node</span><span class=p>.</span><span class=nf>Tick</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>Node</span><span class=p>.</span><span class=nf>HasReady</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>rd</span> <span class=o>:=</span> <span class=nx>Node</span><span class=p>.</span><span class=nf>Ready</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>      <span class=nf>saveToStorage</span><span class=p>(</span><span class=nx>rd</span><span class=p>.</span><span class=nx>State</span><span class=p>,</span> <span class=nx>rd</span><span class=p>.</span><span class=nx>Entries</span><span class=p>,</span> <span class=nx>rd</span><span class=p>.</span><span class=nx>Snapshot</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=nf>send</span><span class=p>(</span><span class=nx>rd</span><span class=p>.</span><span class=nx>Messages</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>entry</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>rd</span><span class=p>.</span><span class=nx>CommittedEntries</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nf>process</span><span class=p>(</span><span class=nx>entry</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=nx>s</span><span class=p>.</span><span class=nx>Node</span><span class=p>.</span><span class=nf>Advance</span><span class=p>(</span><span class=nx>rd</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>saveToStorage</code>​实际上就是调用之前实现的<code>peerStorage</code>​的<code>SaveReadyState</code>​函数，作用就是做持久化。</p><p>​<code>send</code>​是把Raft节点要转发给其他节点的消息转发出去。</p><h3 id=process>process</h3><p>我们重点要实现的就是<code>process</code>​，即entry应用的逻辑。这里要理解一下“应用”的含义，就是把entry中的操作拿给<code>kvDB</code>​去实际执行（例如<code>put、delete</code>​某个数据），与之前持久化日志条目（写入<code>raftDB</code>​）本质上是一样的，都是给<code>badger.DB</code>​做持久化。但是“应用”还需要一个额外的操作，还记得之前存入<code>peer.proposals</code>​的callback函数么，之前遇到错误时直接调用<code>cb.Done</code>​返回了错误响应，这里成功“应用”之后，同样需要调用它返回成功的响应。</p><p>这也带来了一个新的问题，如果在<code>proposals</code>​中的<code>RaftCmd</code>​没有被raft节点提交并且被覆盖了呢？显然永远不会执行这个<code>RaftCmd</code>​了，还记得在一开始提到的错误处理么？这就是第二个需要检查的错误情况<code>ErrStaleCommand</code>​，给出错误的响应。</p><ul><li>ErrStaleCommand：可能是由于领导者更改，某些日志未提交并被新的领导者日志覆盖。但客户并不知道这一点，仍在等待响应。因此，您应该返回此命令以让客户端知道并重试该命令。</li></ul><p>新的问题又来了，怎么去识别这一问题的发生呢？</p><p>仔细思考“日志未提交并被新的领导者日志覆盖”这一情况，同一个Index下的Term肯定发生了变化。因此只要对相同Index下的entry和proposals的Term进行检查就可以发现错误。</p><p>下面给出我的做法，对于每个应用完成的条目，调用<code>clearStaleAndGetTargetProposal</code>​，会首先根据Index清理已经过时的一些proposals，接着利用目标entry的index和term进行匹配，如果成功返回true，此时<code>d.proposals[0]</code>​就是目标proposal；否则返回false，没有找到对应的proposal，应用之后不做响应（这种情况通常是follower节点，因为follower节点中不会保存callback，它应用的条目是leader发送的而不是客户端发送的，不用负责返回响应）。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// if return true, d.proposals[0] is the target proposal
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>d</span> <span class=o>*</span><span class=nx>peerMsgHandler</span><span class=p>)</span> <span class=nf>clearStaleAndGetTargetProposal</span><span class=p>(</span><span class=nx>entry</span> <span class=o>*</span><span class=nx>eraftpb</span><span class=p>.</span><span class=nx>Entry</span><span class=p>)</span> <span class=kt>bool</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>d</span><span class=p>.</span><span class=nf>clearStaleProposals</span><span class=p>(</span><span class=nx>entry</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=mi>0</span><span class=p>].</span><span class=nx>index</span> <span class=o>==</span> <span class=nx>entry</span><span class=p>.</span><span class=nx>Index</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>p</span> <span class=o>:=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>p</span><span class=p>.</span><span class=nx>term</span> <span class=o>!=</span> <span class=nx>entry</span><span class=p>.</span><span class=nx>Term</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nf>NotifyStaleReq</span><span class=p>(</span><span class=nx>entry</span><span class=p>.</span><span class=nx>Term</span><span class=p>,</span> <span class=nx>p</span><span class=p>.</span><span class=nx>cb</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span> <span class=p>=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=mi>1</span><span class=p>:]</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>d</span> <span class=o>*</span><span class=nx>peerMsgHandler</span><span class=p>)</span> <span class=nf>clearStaleProposals</span><span class=p>(</span><span class=nx>entry</span> <span class=o>*</span><span class=nx>eraftpb</span><span class=p>.</span><span class=nx>Entry</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kd>var</span> <span class=nx>i</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>  <span class=k>for</span> <span class=nx>i</span> <span class=p>=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nb>len</span><span class=p>(</span><span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>)</span> <span class=o>&amp;&amp;</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=nx>i</span><span class=p>].</span><span class=nx>index</span> <span class=p>&lt;</span> <span class=nx>entry</span><span class=p>.</span><span class=nx>Index</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=nx>i</span><span class=p>].</span><span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nf>ErrResp</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>util</span><span class=p>.</span><span class=nx>ErrStaleCommand</span><span class=p>{}))</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span> <span class=p>=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=nx>i</span><span class=p>:]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>2B目前只需要我们实现普通<code>Request</code>​处理（<code>Put、Delete、Get、Snap</code>​），而不需要对<code>AdminRequest</code>​进行处理（<code>AdminRequest</code>​主要为对Raft集群的一些操作，例如集群成员变更等等）</p><p>值得注意的是，对于普通<code>Request</code>​，一个entry可能包含多个操作，因此响应需要包含多个操作的响应；而对于<code>AdminReuqest</code>​，一个entry只能包含一个操作。具体可以看proto/pkg/raft_cmdpb/raft_cmdpb.pb.go中的<code>RaftCmdResponse</code>​类，可以看到<code>Responses</code>​是一个指针切片，而<code>AdminResponse</code>​则是一个指针。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>RaftCmdResponse</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>Header</span>               <span class=o>*</span><span class=nx>RaftResponseHeader</span> <span class=s>`protobuf:&#34;bytes,1,opt,name=header&#34; json:&#34;header,omitempty&#34;`</span>
+</span></span><span class=line><span class=cl>  <span class=nx>Responses</span>            <span class=p>[]</span><span class=o>*</span><span class=nx>Response</span>         <span class=s>`protobuf:&#34;bytes,2,rep,name=responses&#34; json:&#34;responses,omitempty&#34;`</span>
+</span></span><span class=line><span class=cl>  <span class=nx>AdminResponse</span>        <span class=o>*</span><span class=nx>AdminResponse</span>      <span class=s>`protobuf:&#34;bytes,3,opt,name=admin_response,json=adminResponse&#34; json:&#34;admin_response,omitempty&#34;`</span>
+</span></span><span class=line><span class=cl>  <span class=nx>XXX_NoUnkeyedLiteral</span> <span class=kd>struct</span><span class=p>{}</span>            <span class=s>`json:&#34;-&#34;`</span>
+</span></span><span class=line><span class=cl>  <span class=nx>XXX_unrecognized</span>     <span class=p>[]</span><span class=kt>byte</span>              <span class=s>`json:&#34;-&#34;`</span>
+</span></span><span class=line><span class=cl>  <span class=nx>XXX_sizecache</span>        <span class=kt>int32</span>               <span class=s>`json:&#34;-&#34;`</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>为了方便进一步理解process普通<code>Reuqest</code>​的流程，给出关键部分的伪代码：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>var</span> <span class=nx>p</span> <span class=o>*</span><span class=nx>proposal</span>
+</span></span><span class=line><span class=cl><span class=nx>resp</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>RaftCmdResponse</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>Header</span><span class=p>:</span>    <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>RaftResponseHeader</span><span class=p>{},</span>
+</span></span><span class=line><span class=cl>  <span class=nx>Responses</span><span class=p>:</span> <span class=p>[]</span><span class=o>*</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{},</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>req</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>cmd</span><span class=p>.</span><span class=nx>Requests</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>switch</span> <span class=nx>req</span><span class=p>.</span><span class=nx>CmdType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Put</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>wb</span><span class=p>.</span><span class=nf>SetCF</span><span class=p>(</span><span class=nx>req</span><span class=p>.</span><span class=nx>Put</span><span class=p>.</span><span class=nx>Cf</span><span class=p>,</span> <span class=nx>req</span><span class=p>.</span><span class=nx>Put</span><span class=p>.</span><span class=nx>Key</span><span class=p>,</span> <span class=nx>req</span><span class=p>.</span><span class=nx>Put</span><span class=p>.</span><span class=nx>Value</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Delete</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nx>wb</span><span class=p>.</span><span class=nf>DeleteCF</span><span class=p>(</span><span class=nx>req</span><span class=p>.</span><span class=nx>Delete</span><span class=p>.</span><span class=nx>Cf</span><span class=p>,</span> <span class=nx>req</span><span class=p>.</span><span class=nx>Delete</span><span class=p>.</span><span class=nx>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Get</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Snap</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=nx>d</span><span class=p>.</span><span class=nf>clearStaleAndGetTargetProposal</span><span class=p>(</span><span class=nx>entry</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>p</span> <span class=p>=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>switch</span> <span class=nx>req</span><span class=p>.</span><span class=nx>CmdType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Put</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{</span><span class=nx>CmdType</span><span class=p>:</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Put</span><span class=p>,</span> <span class=nx>Put</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>PutResponse</span><span class=p>{}})</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Delete</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{</span><span class=nx>CmdType</span><span class=p>:</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Delete</span><span class=p>,</span> <span class=nx>Delete</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>DeleteResponse</span><span class=p>{}})</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Get</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>val</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>engine_util</span><span class=p>.</span><span class=nf>GetCF</span><span class=p>(</span><span class=nx>d</span><span class=p>.</span><span class=nx>peerStorage</span><span class=p>.</span><span class=nx>Engines</span><span class=p>.</span><span class=nx>Kv</span><span class=p>,</span> <span class=nx>req</span><span class=p>.</span><span class=nx>Get</span><span class=p>.</span><span class=nx>Cf</span><span class=p>,</span> <span class=nx>req</span><span class=p>.</span><span class=nx>Get</span><span class=p>.</span><span class=nx>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>panic</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{</span><span class=nx>CmdType</span><span class=p>:</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Get</span><span class=p>,</span> <span class=nx>Get</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>GetResponse</span><span class=p>{</span><span class=nx>Value</span><span class=p>:</span> <span class=nx>val</span><span class=p>}})</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Snap</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{</span><span class=nx>CmdType</span><span class=p>:</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Snap</span><span class=p>,</span> <span class=nx>Snap</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>SnapResponse</span><span class=p>{</span><span class=nx>Region</span><span class=p>:</span> <span class=nx>d</span><span class=p>.</span><span class=nf>Region</span><span class=p>()}})</span>
+</span></span><span class=line><span class=cl>      <span class=nx>p</span><span class=p>.</span><span class=nx>cb</span><span class=p>.</span><span class=nx>Txn</span> <span class=p>=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>peerStorage</span><span class=p>.</span><span class=nx>Engines</span><span class=p>.</span><span class=nx>Kv</span><span class=p>.</span><span class=nf>NewTransaction</span><span class=p>(</span><span class=kc>false</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>      <span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>resp</span><span class=p>.</span><span class=nx>Responses</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>Response</span><span class=p>{</span><span class=nx>CmdType</span><span class=p>:</span> <span class=nx>raft_cmdpb</span><span class=p>.</span><span class=nx>CmdType_Invalid</span><span class=p>})</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=nx>p</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>p</span><span class=p>.</span><span class=nx>cb</span><span class=p>.</span><span class=nf>Done</span><span class=p>(</span><span class=nx>resp</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span> <span class=p>=</span> <span class=nx>d</span><span class=p>.</span><span class=nx>proposals</span><span class=p>[</span><span class=mi>1</span><span class=p>:]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2024-08-14&nbsp;<a class=git-hash href=https://github.com/dillonzq/LoveIt/commit/53e173b127bd3b4f0cc475b3d4e1ea3933948d91 target=_blank title="commit by sszgwdk(u202012059@hust.edu.cn) 53e173b127bd3b4f0cc475b3d4e1ea3933948d91: first">
+<i class="fas fa-hashtag fa-fw" aria-hidden=true></i>53e173b</a></span></div></div><div class=post-info-line><div class=post-info-md><span><a class=link-to-markdown href=/myblog/posts/tinykv_p2b/index.md target=_blank>阅读原始文档</a></span></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 Twitter" data-sharer=twitter data-url=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/ data-title="TinyKV Project 2B" data-hashtags=raft,kv,tinykv><i class="fab fa-twitter fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/ data-hashtag=raft><i class="fab fa-facebook-square fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Hacker News" data-sharer=hackernews data-url=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/ data-title="TinyKV Project 2B"><i class="fab fa-hacker-news fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/ data-title="TinyKV Project 2B"><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=https://sszgwdk.github.io/myblog/posts/tinykv_p2b/ data-title="TinyKV Project 2B"><i class="fab fa-weibo fa-fw" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw" aria-hidden=true></i>&nbsp;<a href=/myblog/tags/raft/>Raft</a>,&nbsp;<a href=/myblog/tags/kv/>Kv</a>,&nbsp;<a href=/myblog/tags/tinykv/>Tinykv</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/myblog/>主页</a></span></section></div><div class=post-nav><a href=/myblog/posts/tinykv_p2b_translate/ class=prev rel=prev title="TinyKV Project 2B 文档翻译"><i class="fas fa-angle-left fa-fw" aria-hidden=true></i>TinyKV Project 2B 文档翻译</a>
+<a href=/myblog/posts/tinykv_p2c/ class=next rel=next title="TinyKV Project 2C">TinyKV Project 2C<i class="fas fa-angle-right fa-fw" aria-hidden=true></i></a></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line><span id=run-time></span></div><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.132.1">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2024</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/myblog/ target=_blank>SszgwDk</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div><script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script><section><span id=busuanzi_container_value_site_pv><i class="far fa-eye fa-fw"></i>
+<span id=busuanzi_value_site_pv></span>
+</span>&nbsp;|&nbsp;
+<span id=busuanzi_container_value_site_uv><i class="fa fa-user"></i>
+<span id=busuanzi_value_site_uv></span></span></section></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/myblog/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"zh-CN",pageSize:10,placeholder:"你的评论 ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},lightgallery:!0,search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.zh-cn",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"algolia"}}</script><script type=text/javascript src=/myblog/js/theme.min.11ec27a93928e59f850531b2018d00bf.js integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js></script><script type=text/javascript src=/js/custom.js></script></body></html>
