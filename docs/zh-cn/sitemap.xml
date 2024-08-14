@@ -2,55 +2,55 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>http://localhost:1313/posts/tinykv_p3c/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p3b_problems/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p3b/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p3a/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p3_translate/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p2c/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p2b/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p2b_translate/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p2a/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_p1/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/tinykv_start/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/categories/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p3c/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p3b_problems/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p3b/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p3a/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p3_translate/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p2c/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p2b/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p2b_translate/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p2a/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_p1/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/tinykv_start/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/categories/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
                         rel="alternate"
                         hreflang="en"
-                        href="http://localhost:1313/en/categories/"
+                        href="https://sszgwdk.github.io/myblog/en/categories/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="zh-cn"
-                    href="http://localhost:1313/categories/"
+                    href="https://sszgwdk.github.io/myblog/categories/"
                     /></url><url>
-            <loc>http://localhost:1313/tags/kv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/categories/kv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/posts/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/tags/raft/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/tags/kv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/categories/kv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/posts/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/tags/raft/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
                         rel="alternate"
                         hreflang="en"
-                        href="http://localhost:1313/en/"
+                        href="https://sszgwdk.github.io/myblog/en/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="zh-cn"
-                    href="http://localhost:1313/"
+                    href="https://sszgwdk.github.io/myblog/"
                     /></url><url>
-            <loc>http://localhost:1313/tags/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/tags/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
                         rel="alternate"
                         hreflang="en"
-                        href="http://localhost:1313/en/tags/"
+                        href="https://sszgwdk.github.io/myblog/en/tags/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="zh-cn"
-                    href="http://localhost:1313/tags/"
+                    href="https://sszgwdk.github.io/myblog/tags/"
                     /></url><url>
-            <loc>http://localhost:1313/tags/tinykv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
-            <loc>http://localhost:1313/about/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/tags/tinykv/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority></url><url>
+            <loc>https://sszgwdk.github.io/myblog/about/</loc><lastmod>2024-08-14T12:57:25&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>1</priority><xhtml:link
                         rel="alternate"
                         hreflang="en"
-                        href="http://localhost:1313/en/about/"
+                        href="https://sszgwdk.github.io/myblog/en/about/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="zh-cn"
-                    href="http://localhost:1313/about/"
+                    href="https://sszgwdk.github.io/myblog/about/"
                     /></url></urlset>

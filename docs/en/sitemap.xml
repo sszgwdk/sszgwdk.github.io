@@ -2,39 +2,39 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>http://localhost:1313/en/about/</loc><lastmod>2024-07-22T11:29:14&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/en/about/</loc><lastmod>2024-07-22T11:29:14&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><xhtml:link
                         rel="alternate"
                         hreflang="zh-cn"
-                        href="http://localhost:1313/about/"
+                        href="https://sszgwdk.github.io/myblog/about/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="en"
-                    href="http://localhost:1313/en/about/"
+                    href="https://sszgwdk.github.io/myblog/en/about/"
                     /></url><url>
-            <loc>http://localhost:1313/en/</loc><lastmod>2024-07-22T11:29:14&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/en/</loc><lastmod>2024-07-22T11:29:14&#43;08:00</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><xhtml:link
                         rel="alternate"
                         hreflang="zh-cn"
-                        href="http://localhost:1313/"
+                        href="https://sszgwdk.github.io/myblog/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="en"
-                    href="http://localhost:1313/en/"
+                    href="https://sszgwdk.github.io/myblog/en/"
                     /></url><url>
-            <loc>http://localhost:1313/en/categories/</loc><changefreq>weekly</changefreq><priority>0.5</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/en/categories/</loc><changefreq>weekly</changefreq><priority>0.5</priority><xhtml:link
                         rel="alternate"
                         hreflang="zh-cn"
-                        href="http://localhost:1313/categories/"
+                        href="https://sszgwdk.github.io/myblog/categories/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="en"
-                    href="http://localhost:1313/en/categories/"
+                    href="https://sszgwdk.github.io/myblog/en/categories/"
                     /></url><url>
-            <loc>http://localhost:1313/en/tags/</loc><changefreq>weekly</changefreq><priority>0.5</priority><xhtml:link
+            <loc>https://sszgwdk.github.io/myblog/en/tags/</loc><changefreq>weekly</changefreq><priority>0.5</priority><xhtml:link
                         rel="alternate"
                         hreflang="zh-cn"
-                        href="http://localhost:1313/tags/"
+                        href="https://sszgwdk.github.io/myblog/tags/"
                         /><xhtml:link
                     rel="alternate"
                     hreflang="en"
-                    href="http://localhost:1313/en/tags/"
+                    href="https://sszgwdk.github.io/myblog/en/tags/"
                     /></url></urlset>
