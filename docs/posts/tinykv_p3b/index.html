@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <title>TinyKV Project 3B - SszgwDk</title><meta name="Description" content="SszgwDk&#39;s Blog"><meta property="og:url" content="https://example.com/posts/tinykv_p3b/">
+  <meta property="og:site_name" content="SszgwDk">
+  <meta property="og:title" content="TinyKV Project 3B">
+  <meta property="og:description" content="project3b是整个tinykv中最难的部分，测试会出现很多问题，往往需要通过打印大量日志才能找到问题的原因，因此在编程时要尤其注意一些">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-08-14T11:56:22+08:00">
+    <meta property="article:modified_time" content="2024-08-14T11:56:22+08:00">
+    <meta property="article:tag" content="Raft">
+    <meta property="article:tag" content="Kv">
+    <meta property="article:tag" content="Tinykv">
+    <meta property="og:image" content="https://example.com/lxq.jpg">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://example.com/lxq.jpg">
+  <meta name="twitter:title" content="TinyKV Project 3B">
+  <meta name="twitter:description" content="project3b是整个tinykv中最难的部分，测试会出现很多问题，往往需要通过打印大量日志才能找到问题的原因，因此在编程时要尤其注意一些">
+<meta name="application-name" content="LoveIt">
+<meta name="apple-mobile-web-app-title" content="LoveIt"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://example.com/posts/tinykv_p3b/" /><link rel="prev" href="https://example.com/posts/tinykv_p3a/" /><link rel="next" href="https://example.com/posts/tinykv_p3b_problems/" /><link rel="stylesheet" href="/css/style.min.e318242ad90f61c3313bdf5cbace1116.css" integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css"></noscript><link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "TinyKV Project 3B",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/example.com\/posts\/tinykv_p3b\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/example.com\/images\/Apple-Devices-Preview.png",
+                            "width":  3200 ,
+                            "height":  2048 
+                        }],"genre": "posts","keywords": "raft, kv, tinykv","wordcount":  4174 ,
+        "url": "https:\/\/example.com\/posts\/tinykv_p3b\/","datePublished": "2024-08-14T11:56:22+08:00","dateModified": "2024-08-14T11:56:22+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+            "@type": "Organization",
+            "name": "xxxx","logo": {
+                    "@type": "ImageObject",
+                    "url": "https:\/\/example.com\/images\/avatar.png",
+                    "width":  1080 ,
+                    "height":  1080 
+                }},"author": {
+                "@type": "Person",
+                "name": "SszgwDk"
+            },"description": ""
+    }
+    </script></head>
+    <body data-header-desktop="fixed" data-header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="SszgwDk"><img
+        class="lazyload logo"
+        src="/svg/loading.min.svg"
+        data-src="/lxq_round.jpg"
+        data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x"
+        data-sizes="auto"
+        alt="/lxq_round.jpg"
+        title="/lxq_round.jpg" />SszgwDk</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/about/"> 关于 </a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i>  </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw" aria-hidden="true"></i>
+                </a><a href="javascript:void(0);" class="menu-item language" title="选择语言">
+                    <i class="fa fa-globe" aria-hidden="true"></i>                      
+                    <select class="language-select" id="language-select-desktop" onchange="location = this.value;"><option value="/posts/tinykv_p3b/" selected>简体中文</option></select>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="SszgwDk"><img
+        class="lazyload logo"
+        src="/svg/loading.min.svg"
+        data-src="/lxq_round.jpg"
+        data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x"
+        data-sizes="auto"
+        alt="/lxq_round.jpg"
+        title="/lxq_round.jpg" />SszgwDk</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/about/" title="">关于</a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw" aria-hidden="true"></i>
+            </a><a href="javascript:void(0);" class="menu-item" title="选择语言">
+                    <i class="fa fa-globe fa-fw" aria-hidden="true"></i>
+                    <select class="language-select" onchange="location = this.value;"><option value="/posts/tinykv_p3b/" selected>简体中文</option></select>
+                </a></div>
+    </div>
+</header><div class="search-dropdown desktop">
+        <div id="search-dropdown-desktop"></div>
+    </div>
+    <div class="search-dropdown mobile">
+        <div id="search-dropdown-mobile"></div>
+    </div><main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content always-active" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">TinyKV Project 3B</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://sszgwdk.github.io" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>SszgwDk</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/kv/"><i class="far fa-folder fa-fw" aria-hidden="true"></i>Kv</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2024-08-14">2024-08-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;约 4174 字&nbsp;
+                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;预计阅读 9 分钟&nbsp;<span id="/posts/tinykv_p3b/" class="leancloud_visitors" data-flag-title="TinyKV Project 3B">
+                        <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;次阅读
+                    </span>&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  data-kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right" aria-hidden="true"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#transferleader">TransferLeader</a></li>
+    <li><a href="#changepeer">ChangePeer</a>
+      <ul>
+        <li><a href="#addnode的apply">AddNode的Apply</a></li>
+        <li><a href="#removenode的apply">RemoveNode的Apply</a></li>
+      </ul>
+    </li>
+    <li><a href="#region-split">Region Split</a>
+      <ul>
+        <li><a href="#apply-split">apply Split</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他修改">其他修改</a>
+      <ul>
+        <li><a href="#applysnapshot后的region状态更新">ApplySnapshot后的region状态更新</a></li>
+        <li><a href="#普通命令的修改">普通命令的修改</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>project3b是整个tinykv中最难的部分，测试会出现很多问题，往往需要通过打印大量日志才能找到问题的原因，因此在编程时要尤其注意一些细节。不过调试这些Bug也是该项目的内容之一，锻炼发现问题解决问题的能力，加深对分布式kv引擎的认识。</p>
+<p>project3b的代码实现最主要还是在<code>kv/raftstore/peer_msg_handler.go</code>​当中，当然在调试过程中必然会发现Raft层的处理也会有很多问题要进行修改。</p>
+<p>project3b增加了三个admin命令：TransferLeader，ChangePeer，Split。为了使tinykv支持这些命令，要完成对应的Propose和Process的逻辑。建议尽量将普通命令和admin命令的Propose和Process分开处理，不要太耦合。</p>
+<h2 id="transferleader">TransferLeader</h2>
+<p>如文档所说，TransferLeader是一个动作不需要作为一条日志Propose到Raft层共识，更不需要Process，只需要调用 RawNode 的 TransferLeader() 方法并返回响应。</p>
+<h2 id="changepeer">ChangePeer</h2>
+<p>propose ChangePeer命令的流程与之前普通命令类似，不同的是调用的RawNode接口由<code>Propose</code>​变成了<code>ProposeConfChange</code>​</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">			<span class="nx">perr</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">RaftGroup</span><span class="p">.</span><span class="nf">ProposeConfChange</span><span class="p">(</span><span class="nx">eraftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">ChangeType</span><span class="p">:</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">AdminRequest</span><span class="p">.</span><span class="nx">ChangePeer</span><span class="p">.</span><span class="nx">ChangeType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">NodeId</span><span class="p">:</span>     <span class="nx">msg</span><span class="p">.</span><span class="nx">AdminRequest</span><span class="p">.</span><span class="nx">ChangePeer</span><span class="p">.</span><span class="nx">Peer</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">Context</span><span class="p">:</span>    <span class="nx">ctx</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="p">})</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>process的流程则相对复杂，需要按照check、apply、response三步来做。</p>
+<p>对于check，由于ChangePeer不涉及key，所以不要考虑<strong>ErrKeyNotInRegion，<strong>但是需要考虑</strong>ErrEpochNotMatch</strong>，使用<code>util.CheckRegionEpoch</code>​方法，具体用法可以参考<code>preProposeRaftCommand</code>​中的代码。</p>
+<blockquote>
+<p>实际上在propose之前也需要检查**ErrEpochNotMatch，**不过已经在<code>preProposeRaftCommand</code>​中已经实现了。</p>
+<p><strong>如果检查出错误，需要利用proposals中的回调返回errResponse。</strong></p>
+</blockquote>
+<p>对于apply，分为AddNode和RemoveNode两种。</p>
+<h3 id="addnode的apply">AddNode的Apply</h3>
+<ol>
+<li>
+<p>检查是否是重复的命令，即如果节点已在集群中，此时跳过apply</p>
+</li>
+<li>
+<p>修改并写入<code>RegionLocalState</code>​（使用​<code>meta.WriteRegionState</code>​），包括<code>RegionEpoch</code>​和<code>Region's peers</code>​</p>
+<ol>
+<li>​<code>region.Peers = append(region.Peers, targetPeer)</code>​</li>
+<li>​<code>region.RegionEpoch.ConfVer += 1</code>​</li>
+</ol>
+</li>
+<li>
+<p>更新<code>GlobalContext storeMeta</code>​，包括<code>regions</code>​和<code>regionRanges</code>​，<strong>注意访问和修改时的加锁</strong></p>
+</li>
+<li>
+<p>​<code>insertPeerCache</code>​，<code>d.RaftGroup.ApplyConfChange</code>​</p>
+</li>
+</ol>
+<blockquote>
+<p>注意不需要实际创建的一个Peer，这里是先加入到集群当中，Leader发送心跳，转发消息时发现节点不存在，由storeWorker调用maybeCreatePeer()进行实际的创建</p>
+</blockquote>
+<h3 id="removenode的apply">RemoveNode的Apply</h3>
+<ol>
+<li>如果需要Remove的节点ID与当前节点ID相等，调用<code>d.destroyPeer()</code>​</li>
+<li>检查是否是重复的命令，即如果节点已不在集群中，此时跳过apply</li>
+<li>修改并写入<code>RegionLocalState</code>​（使用<code>meta.WriteRegionState</code>​），包括<code>RegionEpoch</code>​和<code>Region's peers</code>​</li>
+<li>不用更新<code>GlobalContext storeMeta</code>​，这个是由<code>d.destroyPeer()</code>​完成的</li>
+<li>​<code>removePeerCache</code>​，​<code>d.RaftGroup.ApplyConfChange</code>​</li>
+</ol>
+<p>另外，在完成process后，要检查节点是否停止，因为有可能会销毁当前节点，此时直接返回即可，不需要做后面的任何处理。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">entry</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ready</span><span class="p">.</span><span class="nx">CommittedEntries</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">d</span><span class="p">.</span><span class="nf">process</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">entry</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// may destroy oneself, so need to check if stopped
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">d</span><span class="p">.</span><span class="nx">stopped</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>对于response，按照之前在project2b中相同的处理，我使用自定义的<code>clearStaleAndGetTargetProposal</code>​（详见project2b思路），注意在最后需要调用<code>d.notifyHeartbeatScheduler(region, d.peer)</code>​给Scheduler（project3c）发送一个心跳，来通知region的变化（冗余的更新不会影响正确性，因此建议在发生region修改的地方都发送一个心跳）</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">d</span><span class="p">.</span><span class="nf">clearStaleAndGetTargetProposal</span><span class="p">(</span><span class="nx">entry</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">proposals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">resp</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">RaftCmdResponse</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Header</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">RaftResponseHeader</span><span class="p">{},</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">switch</span> <span class="nx">req</span><span class="p">.</span><span class="nx">CmdType</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">AdminCmdType_ChangePeer</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">resp</span><span class="p">.</span><span class="nx">AdminResponse</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">AdminResponse</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">CmdType</span><span class="p">:</span>    <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">AdminCmdType_ChangePeer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">ChangePeer</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">ChangePeerResponse</span><span class="p">{},</span>
+</span></span><span class="line"><span class="cl">				<span class="c1">// ChangePeer: &amp;raft_cmdpb.ChangePeerResponse{Region: d.Region()},
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">cb</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nx">resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">d</span><span class="p">.</span><span class="nx">proposals</span> <span class="p">=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">proposals</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">d</span><span class="p">.</span><span class="nf">notifyHeartbeatScheduler</span><span class="p">(</span><span class="nx">region</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">peer</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">)</span> <span class="nf">notifyHeartbeatScheduler</span><span class="p">(</span><span class="nx">region</span> <span class="o">*</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Region</span><span class="p">,</span> <span class="nx">peer</span> <span class="o">*</span><span class="nx">peer</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">clonedRegion</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">err</span> <span class="o">:=</span> <span class="nx">util</span><span class="p">.</span><span class="nf">CloneMsg</span><span class="p">(</span><span class="nx">region</span><span class="p">,</span> <span class="nx">clonedRegion</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">schedulerTaskSender</span> <span class="o">&lt;-</span> <span class="o">&amp;</span><span class="nx">runner</span><span class="p">.</span><span class="nx">SchedulerRegionHeartbeatTask</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Region</span><span class="p">:</span>          <span class="nx">clonedRegion</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Peer</span><span class="p">:</span>            <span class="nx">peer</span><span class="p">.</span><span class="nx">Meta</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">PendingPeers</span><span class="p">:</span>    <span class="nx">peer</span><span class="p">.</span><span class="nf">CollectPendingPeers</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ApproximateSize</span><span class="p">:</span> <span class="nx">peer</span><span class="p">.</span><span class="nx">ApproximateSize</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>以上就完成了最基本的confChange，但是不能通过所有测试，由于可能存在网络不稳定和隔离等情况，需要做一些特殊处理和优化，这些处理会在下一篇“tinykv project3b疑难杂症”中汇总。</p>
+<h2 id="region-split">Region Split</h2>
+<p>Split命令的Propose过程与ChangePeer也是类似的，不同的是Split命令中包含一个<code>split_key</code>​，代表将当前region按<code>split_key</code>​拆分，因此要检查<strong>ErrKeyNotInRegion。</strong></p>
+<blockquote>
+<p>之前在project2b中对于普通命令没有对<strong>ErrKeyNotInRegion</strong>检查，此处也需要为除了Snap（Snap命令中不包含key）命令之外的其他普通命令增加检查<strong>ErrKeyNotInRegion</strong>的代码。</p>
+</blockquote>
+<p>Split命令的Process同样可以分成check、apply、response三步。</p>
+<p>对于check，实际上是重复Propose的检查过程，需要检查<strong>ErrEpochNotMatch和ErrKeyNotInRegion。</strong></p>
+<h3 id="apply-split">apply Split</h3>
+<p>apply的过程则相对复杂，我的实现步骤如下：</p>
+<ol>
+<li>
+<p>​<code>split := req.GetSplit()</code>​​获取Split命令中的数据，拷贝一份当前节点原始Region信息暂存在<code>rawRegion</code>​​中（利用<code>util.CloneMsg</code>​​方法），原始Region使用<code>leftRegion</code>​​命名，再拷贝一份<code>rightRegion</code>​​，代表拆分后的右半region。</p>
+</li>
+<li>
+<p>使用<code>split.NewPeerIds</code>​​初始化<code>rightRegion.Peers</code>​​，将<code>split.NewRegionId</code>​​赋值给<code>rightRegion.Id</code>​​，将<code>split.SplitKey</code>​​赋值给<code>rightRegion.StartKey</code>​​，将<code>split.SplitKey</code>​​赋值给<code>leftRegion.EndKey</code>​​，即<code>[StartKey, SplitKey) -&gt; leftRegion</code>​​、<code>[SplitKey, EndKey) -&gt; rightRegion</code>​​。最后不要忘记<code>leftRegion.RegionEpoch.Version += 1</code>​​、<code>rightRegion.RegionEpoch.Version += 1</code>​​。此时<code>leftRegion</code>​​和<code>rightRegion</code>​​对应Split之后的左右Region。（<strong>注意leftRegion继承原始region的所有数据</strong>）</p>
+</li>
+<li>
+<p>使用<code>meta.WriteRegionState</code>​​写入两个region</p>
+</li>
+<li>
+<p>更新<code>storeMeta</code>​​，包括：</p>
+<ol>
+<li>在<code>storeMeta.regionRanges</code>​​中删除<code>rawRegion</code>​​</li>
+<li>在<code>storeMeta.regions</code>​​中添加<code>rightRegion</code>​​</li>
+<li>使用<code>leftRegion</code>​​和<code>rightRegion</code>​​更新<code>storeMeta.regionRanges</code>​​（调用方法<code>storeMeta.regionRanges.ReplaceOrInsert</code>​​）</li>
+<li>注意加锁</li>
+</ol>
+</li>
+<li>
+<p>清理region size，包括<code>SizeDiffHint</code>​和<code>ApproximateSize</code>​，这个很关键，在下一篇疑难杂症也会提到</p>
+</li>
+<li>
+<p>使用<code>createPeer</code>​​方法创建<code>newPeer</code>​​，利用<code>d.ctx.router</code>​​注册和启动该节点</p>
+</li>
+</ol>
+<p>reponse的过程与ChangePeer类似：</p>
+<ol>
+<li><code>notifyHeartbeatScheduler</code>​​发送心跳，注意两个Region都要调用</li>
+<li>返回响应，还是利用自定义的<code>clearStaleAndGetTargetProposal</code>​​</li>
+</ol>
+<h2 id="其他修改">其他修改</h2>
+<h3 id="applysnapshot后的region状态更新">ApplySnapshot后的region状态更新</h3>
+<p>应用快照会通常会伴随region的更新（例如未初始化的新节点），<code>SaveReadyState</code>​的返回值中有一个<code>*ApplySnapResult</code>​，如果它不为<code>nil</code>​且其中的<code>PrevRegion</code>​和<code>Region</code>​不相等，说明发生了Region更新，不仅要在内存中更新<code>regionLocalState</code>​以及持久化，还要更新全局的<code>storeMeta</code>​并发送心跳给Scheduler，如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">		<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">peerStorage</span><span class="p">.</span><span class="nf">SaveReadyState</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ready</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// update region
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">result</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">reflect</span><span class="p">.</span><span class="nf">DeepEqual</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">PrevRegion</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">d</span><span class="p">.</span><span class="nx">peerStorage</span><span class="p">.</span><span class="nf">SetRegion</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="nx">storeMeta</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">storeMeta</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">storeMeta</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">storeMeta</span><span class="p">.</span><span class="nx">regions</span><span class="p">[</span><span class="nx">result</span><span class="p">.</span><span class="nx">Region</span><span class="p">.</span><span class="nf">GetId</span><span class="p">()]</span> <span class="p">=</span> <span class="nx">result</span><span class="p">.</span><span class="nx">Region</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">storeMeta</span><span class="p">.</span><span class="nx">regionRanges</span><span class="p">.</span><span class="nf">ReplaceOrInsert</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">regionItem</span><span class="p">{</span><span class="nx">region</span><span class="p">:</span> <span class="nx">result</span><span class="p">.</span><span class="nx">Region</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">storeMeta</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="nx">d</span><span class="p">.</span><span class="nf">HeartbeatScheduler</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">schedulerTaskSender</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="普通命令的修改">普通命令的修改</h3>
+<p>由于引入了region，对普通命令的propose和process也要做相应修改。</p>
+<p>首先就是对Get、Put、Delete检查<strong>ErrEpochNotMatch</strong>​和<strong>ErrKeyNotInRegion。</strong></p>
+<p>其次对于Put和Delete命令的应用，需要记录当前region的大小变化，这是通过<code>SizeDiffHint</code>​记录的。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">peer</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// An inaccurate difference in region size since last reset.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// split checker is triggered when it exceeds the threshold, it makes split checker not scan the data very often
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// (Used in 3B split)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">SizeDiffHint</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Approximate size of the region.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// It&#39;s updated everytime the split checker scan the data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// (Used in 3B split)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ApproximateSize</span> <span class="o">*</span><span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="o">...</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol>
+<li>对于Put，​<code>d.SizeDiffHint += uint64(len(req.Put.Key) + len(req.Put.Value))</code>​</li>
+<li>对于Delete命令，​<code>d.SizeDiffHint -= uint64(len(req.Delete.Key))</code>​</li>
+</ol>
+<p>在Split中也提到Apply Admin_Split完成后，要对<code>SizeDiffHint</code>​和<code>ApproximateSize</code>​更新。</p>
+<blockquote>
+<p>如果不做上述处理在测试时会引发Request Timeout。原来split checker会依据<code>SizeDiffHint</code>​来判断region承载的数据量是否超出阈值，从而触发split操作。这在文档中并没有说明，害我调了很久。</p>
+</blockquote>
+<p>‍</p>
+<p>以上就完成了3B的所有基本内容，但测试通常是过不了的，会有很多异常情况，下一篇将对我当时遇到的疑难杂症进行汇总。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-08-14</span>
+            </div></div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/posts/tinykv_p3b/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://example.com/posts/tinykv_p3b/" data-title="TinyKV Project 3B" data-hashtags="raft,kv,tinykv"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://example.com/posts/tinykv_p3b/" data-hashtag="raft"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Hacker News" data-sharer="hackernews" data-url="https://example.com/posts/tinykv_p3b/" data-title="TinyKV Project 3B"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Line" data-sharer="line" data-url="https://example.com/posts/tinykv_p3b/" data-title="TinyKV Project 3B"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://example.com/posts/tinykv_p3b/" data-title="TinyKV Project 3B"><i class="fab fa-weibo fa-fw" aria-hidden="true"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/raft/">Raft</a>,&nbsp;<a href="/tags/kv/">Kv</a>,&nbsp;<a href="/tags/tinykv/">Tinykv</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/tinykv_p3a/" class="prev" rel="prev" title="TinyKV Project 3A"><i class="fas fa-angle-left fa-fw" aria-hidden="true"></i>TinyKV Project 3A</a>
+            <a href="/posts/tinykv_p3b_problems/" class="next" rel="next" title="TinyKV Project 3B 疑难杂症">TinyKV Project 3B 疑难杂症<i class="fas fa-angle-right fa-fw" aria-hidden="true"></i></a></div>
+</div>
+<div id="comments"><div id="valine" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://valine.js.org/">Valine</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">
+                <span id="run-time"></span>
+            </div><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.132.1">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden="true"></i> LoveIt</a>
+                </div><div class="footer-line" itemscope itemtype="http://schema.org/CreativeWork"><i class="far fa-copyright fa-fw" aria-hidden="true"></i><span itemprop="copyrightYear">2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">SszgwDk</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+    
+        
+        <script async src=" //busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js "></script>
+    
+
+    
+        
+            <section>
+                
+                    <span id="busuanzi_container_value_site_pv"><i class="far fa-eye fa-fw"></i>
+                        
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+
+                
+                    &nbsp;|&nbsp;              
+                
+
+                
+                    <span id="busuanzi_container_value_site_uv"><i class="fa fa-user"></i>
+                        
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+            </section>
+        
+
+        
+        
+    
+
+</div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw" aria-hidden="true"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw" aria-hidden="true"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/valine/valine.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css"><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":50},"comment":{"valine":{"appId":"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI","appKey":"WBmoGyJtbqUswvfLh6L8iEBr","avatar":"mp","el":"#valine","emojiCDN":"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/","emojiMaps":{"100":"1f4af.png","alien":"1f47d.png","anger":"1f4a2.png","angry":"1f620.png","anguished":"1f627.png","astonished":"1f632.png","black_heart":"1f5a4.png","blue_heart":"1f499.png","blush":"1f60a.png","bomb":"1f4a3.png","boom":"1f4a5.png","broken_heart":"1f494.png","brown_heart":"1f90e.png","clown_face":"1f921.png","cold_face":"1f976.png","cold_sweat":"1f630.png","confounded":"1f616.png","confused":"1f615.png","cry":"1f622.png","crying_cat_face":"1f63f.png","cupid":"1f498.png","dash":"1f4a8.png","disappointed":"1f61e.png","disappointed_relieved":"1f625.png","dizzy":"1f4ab.png","dizzy_face":"1f635.png","drooling_face":"1f924.png","exploding_head":"1f92f.png","expressionless":"1f611.png","face_vomiting":"1f92e.png","face_with_cowboy_hat":"1f920.png","face_with_hand_over_mouth":"1f92d.png","face_with_head_bandage":"1f915.png","face_with_monocle":"1f9d0.png","face_with_raised_eyebrow":"1f928.png","face_with_rolling_eyes":"1f644.png","face_with_symbols_on_mouth":"1f92c.png","face_with_thermometer":"1f912.png","fearful":"1f628.png","flushed":"1f633.png","frowning":"1f626.png","ghost":"1f47b.png","gift_heart":"1f49d.png","green_heart":"1f49a.png","grimacing":"1f62c.png","grin":"1f601.png","grinning":"1f600.png","hankey":"1f4a9.png","hear_no_evil":"1f649.png","heart":"2764-fe0f.png","heart_decoration":"1f49f.png","heart_eyes":"1f60d.png","heart_eyes_cat":"1f63b.png","heartbeat":"1f493.png","heartpulse":"1f497.png","heavy_heart_exclamation_mark_ornament":"2763-fe0f.png","hole":"1f573-fe0f.png","hot_face":"1f975.png","hugging_face":"1f917.png","hushed":"1f62f.png","imp":"1f47f.png","innocent":"1f607.png","japanese_goblin":"1f47a.png","japanese_ogre":"1f479.png","joy":"1f602.png","joy_cat":"1f639.png","kiss":"1f48b.png","kissing":"1f617.png","kissing_cat":"1f63d.png","kissing_closed_eyes":"1f61a.png","kissing_heart":"1f618.png","kissing_smiling_eyes":"1f619.png","laughing":"1f606.png","left_speech_bubble":"1f5e8-fe0f.png","love_letter":"1f48c.png","lying_face":"1f925.png","mask":"1f637.png","money_mouth_face":"1f911.png","nauseated_face":"1f922.png","nerd_face":"1f913.png","neutral_face":"1f610.png","no_mouth":"1f636.png","open_mouth":"1f62e.png","orange_heart":"1f9e1.png","partying_face":"1f973.png","pensive":"1f614.png","persevere":"1f623.png","pleading_face":"1f97a.png","pouting_cat":"1f63e.png","purple_heart":"1f49c.png","rage":"1f621.png","relaxed":"263a-fe0f.png","relieved":"1f60c.png","revolving_hearts":"1f49e.png","right_anger_bubble":"1f5ef-fe0f.png","robot_face":"1f916.png","rolling_on_the_floor_laughing":"1f923.png","scream":"1f631.png","scream_cat":"1f640.png","see_no_evil":"1f648.png","shushing_face":"1f92b.png","skull":"1f480.png","skull_and_crossbones":"2620-fe0f.png","sleeping":"1f634.png","sleepy":"1f62a.png","slightly_frowning_face":"1f641.png","slightly_smiling_face":"1f642.png","smile":"1f604.png","smile_cat":"1f638.png","smiley":"1f603.png","smiley_cat":"1f63a.png","smiling_face_with_3_hearts":"1f970.png","smiling_imp":"1f608.png","smirk":"1f60f.png","smirk_cat":"1f63c.png","sneezing_face":"1f927.png","sob":"1f62d.png","space_invader":"1f47e.png","sparkling_heart":"1f496.png","speak_no_evil":"1f64a.png","speech_balloon":"1f4ac.png","star-struck":"1f929.png","stuck_out_tongue":"1f61b.png","stuck_out_tongue_closed_eyes":"1f61d.png","stuck_out_tongue_winking_eye":"1f61c.png","sunglasses":"1f60e.png","sweat":"1f613.png","sweat_drops":"1f4a6.png","sweat_smile":"1f605.png","thinking_face":"1f914.png","thought_balloon":"1f4ad.png","tired_face":"1f62b.png","triumph":"1f624.png","two_hearts":"1f495.png","unamused":"1f612.png","upside_down_face":"1f643.png","weary":"1f629.png","white_frowning_face":"2639-fe0f.png","white_heart":"1f90d.png","wink":"1f609.png","woozy_face":"1f974.png","worried":"1f61f.png","yawning_face":"1f971.png","yellow_heart":"1f49b.png","yum":"1f60b.png","zany_face":"1f92a.png","zipper_mouth_face":"1f910.png","zzz":"1f4a4.png"},"enableQQ":false,"highlight":true,"lang":"zh-CN","pageSize":10,"placeholder":"你的评论 ...","recordIP":true,"serverURLs":"https://leancloud.hugoloveit.com","visitor":true}},"lightgallery":true,"search":{"algoliaAppID":"PASDMWALPK","algoliaIndex":"index.zh-cn","algoliaSearchKey":"b42948e51daaa93df92381c8e2ac0f93","highlightTag":"em","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"algolia"}};</script><script type="text/javascript" src="/js/theme.min.11ec27a93928e59f850531b2018d00bf.js" integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js"></script>
+<script type="text/javascript" src="/js/custom.js"></script></body>
+</html>

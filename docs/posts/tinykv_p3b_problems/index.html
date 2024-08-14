@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <title>TinyKV Project 3B 疑难杂症 - SszgwDk</title><meta name="Description" content="SszgwDk&#39;s Blog"><meta property="og:url" content="https://example.com/posts/tinykv_p3b_problems/">
+  <meta property="og:site_name" content="SszgwDk">
+  <meta property="og:title" content="TinyKV Project 3B 疑难杂症">
+  <meta property="og:description" content="我在做tinykv这个课程的过程中，3b之前遇到的问题大多能在网上找到解决方法，因此也没怎么做记录；而3b由于引入了Multi Raft以及集">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-08-14T12:03:17+08:00">
+    <meta property="article:modified_time" content="2024-08-14T12:03:17+08:00">
+    <meta property="article:tag" content="Raft">
+    <meta property="article:tag" content="Kv">
+    <meta property="article:tag" content="Tinykv">
+    <meta property="og:image" content="https://example.com/lxq.jpg">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://example.com/lxq.jpg">
+  <meta name="twitter:title" content="TinyKV Project 3B 疑难杂症">
+  <meta name="twitter:description" content="我在做tinykv这个课程的过程中，3b之前遇到的问题大多能在网上找到解决方法，因此也没怎么做记录；而3b由于引入了Multi Raft以及集">
+<meta name="application-name" content="LoveIt">
+<meta name="apple-mobile-web-app-title" content="LoveIt"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://example.com/posts/tinykv_p3b_problems/" /><link rel="prev" href="https://example.com/posts/tinykv_p3b/" /><link rel="next" href="https://example.com/posts/tinykv_p3c/" /><link rel="stylesheet" href="/css/style.min.e318242ad90f61c3313bdf5cbace1116.css" integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css"></noscript><link rel="preload" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "TinyKV Project 3B 疑难杂症",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/example.com\/posts\/tinykv_p3b_problems\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/example.com\/images\/Apple-Devices-Preview.png",
+                            "width":  3200 ,
+                            "height":  2048 
+                        }],"genre": "posts","keywords": "raft, kv, tinykv","wordcount":  5593 ,
+        "url": "https:\/\/example.com\/posts\/tinykv_p3b_problems\/","datePublished": "2024-08-14T12:03:17+08:00","dateModified": "2024-08-14T12:03:17+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+            "@type": "Organization",
+            "name": "xxxx","logo": {
+                    "@type": "ImageObject",
+                    "url": "https:\/\/example.com\/images\/avatar.png",
+                    "width":  1080 ,
+                    "height":  1080 
+                }},"author": {
+                "@type": "Person",
+                "name": "SszgwDk"
+            },"description": ""
+    }
+    </script></head>
+    <body data-header-desktop="fixed" data-header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="SszgwDk"><img
+        class="lazyload logo"
+        src="/svg/loading.min.svg"
+        data-src="/lxq_round.jpg"
+        data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x"
+        data-sizes="auto"
+        alt="/lxq_round.jpg"
+        title="/lxq_round.jpg" />SszgwDk</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/about/"> 关于 </a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i>  </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw" aria-hidden="true"></i>
+                </a><a href="javascript:void(0);" class="menu-item language" title="选择语言">
+                    <i class="fa fa-globe" aria-hidden="true"></i>                      
+                    <select class="language-select" id="language-select-desktop" onchange="location = this.value;"><option value="/posts/tinykv_p3b_problems/" selected>简体中文</option></select>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="SszgwDk"><img
+        class="lazyload logo"
+        src="/svg/loading.min.svg"
+        data-src="/lxq_round.jpg"
+        data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x"
+        data-sizes="auto"
+        alt="/lxq_round.jpg"
+        title="/lxq_round.jpg" />SszgwDk</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw" aria-hidden="true"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/about/" title="">关于</a><a class="menu-item" href="https://github.com/dillonzq/LoveIt" title="GitHub" rel="noopener noreffer" target="_blank"><i class='fab fa-github fa-fw' aria-hidden='true'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw" aria-hidden="true"></i>
+            </a><a href="javascript:void(0);" class="menu-item" title="选择语言">
+                    <i class="fa fa-globe fa-fw" aria-hidden="true"></i>
+                    <select class="language-select" onchange="location = this.value;"><option value="/posts/tinykv_p3b_problems/" selected>简体中文</option></select>
+                </a></div>
+    </div>
+</header><div class="search-dropdown desktop">
+        <div id="search-dropdown-desktop"></div>
+    </div>
+    <div class="search-dropdown mobile">
+        <div id="search-dropdown-mobile"></div>
+    </div><main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content always-active" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">TinyKV Project 3B 疑难杂症</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://sszgwdk.github.io" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw" aria-hidden="true"></i>SszgwDk</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/kv/"><i class="far fa-folder fa-fw" aria-hidden="true"></i>Kv</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw" aria-hidden="true"></i>&nbsp;<time datetime="2024-08-14">2024-08-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden="true"></i>&nbsp;约 5593 字&nbsp;
+                <i class="far fa-clock fa-fw" aria-hidden="true"></i>&nbsp;预计阅读 12 分钟&nbsp;<span id="/posts/tinykv_p3b_problems/" class="leancloud_visitors" data-flag-title="TinyKV Project 3B 疑难杂症">
+                        <i class="far fa-eye fa-fw" aria-hidden="true"></i>&nbsp;<span class=leancloud-visitors-count></span>&nbsp;次阅读
+                    </span>&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  data-kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right" aria-hidden="true"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#snapshot相关">SnapShot相关</a>
+      <ul>
+        <li><a href="#1request-timeout-1">（1）Request Timeout-1</a></li>
+        <li><a href="#2request-timeout-2">（2）Request Timeout-2</a></li>
+      </ul>
+    </li>
+    <li><a href="#transferleader相关">TransferLeader相关</a>
+      <ul>
+        <li><a href="#1request-timeout选举冲突的问题">（1）Request Timeout（选举冲突的问题）</a></li>
+        <li><a href="#2transferleader的超时机制">（2）TransferLeader的超时机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#confchange相关">confChange相关</a>
+      <ul>
+        <li><a href="#1无法正确处理confchange命令">（1）无法正确处理confChange命令</a></li>
+        <li><a href="#2addnode后-requesttimeout对于未初始化的raft节点的处理">（2）AddNode后 RequestTimeout（对于未初始化的Raft节点的处理）</a></li>
+        <li><a href="#3region-x-x-meta-corruption-detected">（3）​[region x] x meta corruption detected​</a></li>
+        <li><a href="#4confchange-request-timeoutpropose成功但是confchange无法添加到raftlog当中">（4）confChange Request TimeOut（propose成功，但是confChange无法添加到RaftLog当中）</a></li>
+        <li><a href="#5删除节点时会遇到-request-timeout-问题">（5）删除节点时会遇到 Request timeout 问题</a></li>
+      </ul>
+    </li>
+    <li><a href="#split相关">Split相关</a>
+      <ul>
+        <li><a href="#1snap请求处理超时">（1）Snap请求处理超时</a></li>
+        <li><a href="#2key-xxx-is-not-in-region-xx">（2）key [xxx&hellip;] is not in region xx</a></li>
+        <li><a href="#3test-timed-out-after-10m0s">（3）test timed out after 10m0s</a></li>
+        <li><a href="#4runtime-error-index-out-of-range-1-with-length-1">（4）runtime error: index out of range [1] with length 1</a></li>
+        <li><a href="#5find-no-peer-for-store-4-in-region-id13-start_key0-00000011-end_key2-00000004">（5）find no peer for store 4 in region id:13 start_key:&ldquo;0 00000011&rdquo; end_key:&ldquo;2 00000004&rdquo;</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我在做tinykv这个课程的过程中，3b之前遇到的问题大多能在网上找到解决方法，因此也没怎么做记录；而3b由于引入了Multi Raft以及集群成员变更、Split Region等Admin命令，对很多细节处理要求严格，并且测试点会模拟丢包和网络隔离等异常情况，需要做较多额外的针对性处理，因此我在做的时候遇到了许多网上难以找到的问题，通过在海量日志中一步步跟踪才解决了它们。</p>
+<p>下面将对我在3b中遇到的疑难杂症及解决方法进行汇总。</p>
+<h2 id="snapshot相关">SnapShot相关</h2>
+<h3 id="1request-timeout-1">（1）Request Timeout-1</h3>
+<p>问题原因：当前节点有snapshot正在被应用时，收到新的snapshot没有过滤掉</p>
+<p>解决方法：当<code>r.RaftLog.pendingSnapshot != nil</code>​时不接受新的snapShot，并且不处理<code>Append</code>​消息。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">handleAppendEntries</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nx">pendingSnapshot</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">handleSnapshot</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nx">pendingSnapshot</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2request-timeout-2">（2）Request Timeout-2</h3>
+<p>问题原因：follower在处理append消息的时候，<code>prevLogIndex</code>​的条目在follower已经被Compact掉了（<strong>Leader当中反而没有被Compact，怪了</strong>），此时通过<code>RaftLog.Term()</code>​会返回错误，无法完成日志匹配动作，导致leader中记录的Match会保持不变，在集群中只有两个节点的情况下committed无法推进。</p>
+<p>解决方法：follower返回响应，令leader主动发送一个Snapshot给自己，我这里利用了<code>MsgAppendResponse</code>​中没有使用的<code>commit</code>​字段。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">const</span> <span class="nx">ShouldSendSnapByCommit</span> <span class="kt">uint64</span> <span class="p">=</span> <span class="mi">123456</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">handleAppendEntries</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="err">。。。</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">tTerm</span><span class="p">,</span> <span class="nx">terr</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">Term</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// debug
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">lastTerm</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">Term</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">terr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">log</span><span class="p">.</span><span class="nf">DPrintfRaft</span><span class="p">(</span><span class="s">&#34;node %d handleAppendEntries from %d failed, get term failed: %v\n&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">terr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">log</span><span class="p">.</span><span class="nf">DPrintfRaft</span><span class="p">(</span><span class="s">&#34;l.entries: %d, i: %d, l.dummyIndex: %d, l.lastIndex: %d\n&#34;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nx">entries</span><span class="p">),</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nx">dummyIndex</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// tell leader should send snapshot
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nx">r</span><span class="p">.</span><span class="nx">msgs</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">msgs</span><span class="p">,</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">MsgType</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MessageType_MsgAppendResponse</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">To</span><span class="p">:</span>      <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">From</span><span class="p">:</span>    <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Term</span><span class="p">:</span>    <span class="nx">lastTerm</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Index</span><span class="p">:</span>   <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Reject</span><span class="p">:</span>  <span class="kc">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Commit</span><span class="p">:</span>  <span class="nx">ShouldSendSnapByCommit</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="p">})</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="err">。。。</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">handleAppendResponse</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">r</span><span class="p">.</span><span class="nx">greaterTermRspNum</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">greaterTermRspNum</span> <span class="p">&gt;</span> <span class="nx">GreaterTermRspThreshold</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nx">greaterTermRspNum</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">None</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// r.becomeFollower(m.Term, None)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// special handle for need to send snapshot
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Commit</span> <span class="o">==</span> <span class="nx">ShouldSendSnapByCommit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">r</span><span class="p">.</span><span class="nf">sendSnapshot</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="err">。。。</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>‍</p>
+<h2 id="transferleader相关">TransferLeader相关</h2>
+<h3 id="1request-timeout选举冲突的问题">（1）Request Timeout（选举冲突的问题）</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">node</span><span class="p">[[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">2</span><span class="p">]</span> <span class="nx">propose</span> <span class="nx">common</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Put</span> <span class="nx">put</span><span class="p">:&lt;</span><span class="nx">cf</span><span class="p">:</span><span class="s">&#34;default&#34;</span> <span class="nx">key</span><span class="p">:</span><span class="s">&#34;2 00000053&#34;</span> <span class="nx">value</span><span class="p">:</span><span class="s">&#34;x 2 53 y&#34;</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="p">,</span> <span class="nx">leader</span><span class="p">:</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">2</span> <span class="nx">is</span> <span class="nx">leader</span><span class="p">,</span> <span class="nx">but</span> <span class="nx">leadTransferee</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">None</span><span class="p">,</span> <span class="nx">stop</span> <span class="nx">accept</span> <span class="nx">propose</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">2</span> <span class="nx">tryUpdateCommit</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Prs</span><span class="p">)</span> <span class="p">=</span> <span class="mi">2</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">()</span> <span class="p">=</span> <span class="mi">584</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">committed</span> <span class="p">=</span> <span class="mi">583</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">2</span> <span class="nx">transfer</span> <span class="nx">leader</span> <span class="nx">to</span> <span class="mi">1</span> <span class="nx">success</span><span class="p">!</span> <span class="nx">sendTimeoutNow</span><span class="p">!</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="o">-------------------------------------------------------------------------</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">node</span><span class="p">[[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">2</span><span class="p">]</span> <span class="nx">propose</span> <span class="nx">common</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Snap</span> <span class="nx">snap</span><span class="p">:&lt;&gt;</span> <span class="p">&gt;</span> <span class="p">,</span> <span class="nx">leader</span><span class="p">:</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">2</span> <span class="nx">tryUpdateCommit</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Prs</span><span class="p">)</span> <span class="p">=</span> <span class="mi">2</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">()</span> <span class="p">=</span> <span class="mi">585</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">committed</span> <span class="p">=</span> <span class="mi">584</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mf">32.433521</span> <span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">200</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">Cluster</span><span class="p">]</span> <span class="nx">request</span> <span class="nx">err</span> <span class="nx">resp</span><span class="p">.</span> <span class="nx">err</span><span class="p">:</span> <span class="nx">message</span><span class="p">:</span><span class="s">&#34;raft proposal dropped&#34;</span> <span class="p">,</span> <span class="nx">req</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Put</span> <span class="nx">put</span><span class="p">:&lt;</span><span class="nx">cf</span><span class="p">:</span><span class="s">&#34;default&#34;</span> <span class="nx">key</span><span class="p">:</span><span class="s">&#34;1 00000062&#34;</span> <span class="nx">value</span><span class="p">:</span><span class="s">&#34;x 1 62 y&#34;</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mf">32.433521</span> <span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">200</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">Cluster</span><span class="p">]</span> <span class="nx">request</span> <span class="nx">err</span> <span class="nx">resp</span><span class="p">.</span> <span class="nx">err</span><span class="p">:</span> <span class="nx">message</span><span class="p">:</span><span class="s">&#34;raft proposal dropped&#34;</span> <span class="p">,</span> <span class="nx">req</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Put</span> <span class="nx">put</span><span class="p">:&lt;</span><span class="nx">cf</span><span class="p">:</span><span class="s">&#34;default&#34;</span> <span class="nx">key</span><span class="p">:</span><span class="s">&#34;4 00000046&#34;</span> <span class="nx">value</span><span class="p">:</span><span class="s">&#34;x 4 46 y&#34;</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mf">32.433564</span> <span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">200</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">Cluster</span><span class="p">]</span> <span class="nx">request</span> <span class="nx">err</span> <span class="nx">resp</span><span class="p">.</span> <span class="nx">err</span><span class="p">:</span> <span class="nx">message</span><span class="p">:</span><span class="s">&#34;raft proposal dropped&#34;</span> <span class="p">,</span> <span class="nx">req</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Put</span> <span class="nx">put</span><span class="p">:&lt;</span><span class="nx">cf</span><span class="p">:</span><span class="s">&#34;default&#34;</span> <span class="nx">key</span><span class="p">:</span><span class="s">&#34;2 00000053&#34;</span> <span class="nx">value</span><span class="p">:</span><span class="s">&#34;x 2 53 y&#34;</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">node</span><span class="p">[[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">2</span><span class="p">]:</span> <span class="nx">process</span> <span class="nx">common</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">4</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Put</span> <span class="nx">put</span><span class="p">:&lt;</span><span class="nx">cf</span><span class="p">:</span><span class="s">&#34;default&#34;</span> <span class="nx">key</span><span class="p">:</span><span class="s">&#34;0 00000057&#34;</span> <span class="nx">value</span><span class="p">:</span><span class="s">&#34;x 0 57 y&#34;</span> <span class="p">&gt;</span> <span class="p">&gt;</span> 
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span><span class="p">,</span> <span class="nx">lastIndex</span><span class="p">:</span> <span class="mi">584</span><span class="p">,</span><span class="nx">preLogIndex</span><span class="p">:</span> <span class="mi">583</span><span class="p">,</span> <span class="nx">preLogTerm</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">):</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span> <span class="nx">success</span><span class="p">,</span> <span class="nx">conflictFlag</span><span class="p">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span><span class="p">,</span> <span class="nx">lastIndex</span><span class="p">:</span> <span class="mi">584</span><span class="p">,</span><span class="nx">preLogIndex</span><span class="p">:</span> <span class="mi">583</span><span class="p">,</span> <span class="nx">preLogTerm</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">):</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span> <span class="nx">success</span><span class="p">,</span> <span class="nx">conflictFlag</span><span class="p">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span><span class="p">,</span> <span class="nx">lastIndex</span><span class="p">:</span> <span class="mi">584</span><span class="p">,</span><span class="nx">preLogIndex</span><span class="p">:</span> <span class="mi">584</span><span class="p">,</span> <span class="nx">preLogTerm</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">):</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">22</span> <span class="mo">07</span><span class="p">:</span><span class="mi">53</span><span class="p">:</span><span class="mi">32</span> <span class="p">[</span><span class="nx">Raft</span><span class="p">]:</span> <span class="nx">node</span> <span class="mi">1</span> <span class="nx">handleAppendEntries</span> <span class="nx">from</span> <span class="mi">2</span> <span class="nx">success</span><span class="p">,</span> <span class="nx">conflictFlag</span><span class="p">:</span> <span class="kc">true</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到，当Node 2<code>sendTimeOutNow</code>​给1之后，由于还是leader，且<code>leaderTransferee == None</code>​，能够propose新的entry，导致node 1发起选举之后，没办法得到选票，没办法当选，从而造成冲突。</p>
+<p>解决方法：leader在<code>sendTimeoutNow</code>​之后主动变为follower，从而不会接收到propose产生新的entry，目标节点能够顺利当选。</p>
+<p>‍</p>
+<h3 id="2transferleader的超时机制">（2）TransferLeader的超时机制</h3>
+<p>如果领导权转移的目标节点失联，会导致leader一直处于leadTransferee的状态，没办法propose entry，因此要为TransferLeader增加超时机制，我直接使用选举超时作为领导权转移的超时时间。TransferLeader成功后<code>becomefollower()</code>​会完成清零选举超时的工作。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">tickLeader</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// special handle with leadTransforee
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// can&#39;t transfer success before a ElectTimeout, give up
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="o">&gt;=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">randElectTimeout</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span> <span class="p">=</span> <span class="nx">None</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nx">randElectTimeout</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">electionTimeout</span> <span class="o">+</span> <span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">electionTimeout</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>‍</p>
+<p>‍</p>
+<h2 id="confchange相关">confChange相关</h2>
+<h3 id="1无法正确处理confchange命令">（1）无法正确处理confChange命令</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="o">---</span> <span class="nx">FAIL</span><span class="p">:</span> <span class="nf">TestBasicConfChange3B</span> <span class="p">(</span><span class="mf">6.34</span><span class="nx">s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">have</span> <span class="nx">peer</span><span class="p">:</span> <span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span>  <span class="p">[</span><span class="nx">recovered</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">panic</span><span class="p">:</span> <span class="nx">have</span> <span class="nx">peer</span><span class="p">:</span> <span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>错误原因：ConfChange条目中的数据不正确</p>
+<p>Solution：在Propose中，针对 ConfChange 请求的序列化和反序列化方式与其他请求不同</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">  <span class="nx">ctx</span><span class="p">,</span> <span class="nx">marErr</span> <span class="o">:=</span> <span class="nx">msg</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">marErr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">panic</span><span class="p">(</span><span class="nx">marErr</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">err</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">RaftGroup</span><span class="p">.</span><span class="nf">ProposeConfChange</span><span class="p">(</span><span class="nx">eraftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">ChangeType</span><span class="p">:</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">AdminRequest</span><span class="p">.</span><span class="nx">ChangePeer</span><span class="p">.</span><span class="nx">ChangeType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">NodeId</span><span class="p">:</span>     <span class="nx">msg</span><span class="p">.</span><span class="nx">AdminRequest</span><span class="p">.</span><span class="nx">ChangePeer</span><span class="p">.</span><span class="nx">Peer</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">Context</span><span class="p">:</span>    <span class="nx">ctx</span><span class="p">,</span>			<span class="c1">// notice
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">})</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2addnode后-requesttimeout对于未初始化的raft节点的处理">（2）AddNode后 RequestTimeout（对于未初始化的Raft节点的处理）</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="o">--</span> <span class="nx">FAIL</span><span class="p">:</span> <span class="nf">TestBasicConfChange3B</span> <span class="p">(</span><span class="mf">52.68</span><span class="nx">s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">timeout</span> <span class="p">[</span><span class="nx">recovered</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">panic</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">timeout</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>错误原因：对于Raft节点不在集群当中（尚未初始化）的情况，屏蔽掉了<code>HeartBeat</code>​和<code>Snapshot</code>​消息，使得节点不能通过leader发送的Snapshot完成初始化，进而导致committed始终无法向前推进（<strong>由于新节点的原因无法满足“集群大多数”的条件</strong>），请求无法应用而超时。</p>
+<p>Solution：对于Raft节点不在集群当中（尚未初始化）的情况，只能屏蔽选举相关的消息。</p>
+<h3 id="3region-x-x-meta-corruption-detected">（3）​[region x] x meta corruption detected​</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="mi">2023</span><span class="o">/</span><span class="mi">12</span><span class="o">/</span><span class="mi">29</span> <span class="mi">12</span><span class="p">:</span><span class="mi">16</span><span class="p">:</span><span class="mi">14</span> <span class="nx">request</span> <span class="nx">err</span> <span class="nx">resp</span><span class="p">.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="p">[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">5</span> <span class="nx">meta</span> <span class="nx">corruption</span> <span class="nx">detected</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">goroutine</span> <span class="mi">321</span> <span class="p">[</span><span class="nx">running</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">destroyPeer</span><span class="p">(</span><span class="mh">0xc17c9b9e10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">975</span> <span class="o">+</span><span class="mh">0x265</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">processConfChange</span><span class="p">(</span><span class="mh">0xc17c9b9e10</span><span class="p">,</span> <span class="mh">0xc17c924d50</span><span class="err">?</span><span class="p">,</span> <span class="mh">0xc17c9b9aa0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">253</span> <span class="o">+</span><span class="mh">0x6de</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">process</span><span class="p">(</span><span class="mh">0xc17c9b9e10</span><span class="p">,</span> <span class="mh">0xc17c9b9c40</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">351</span> <span class="o">+</span><span class="mh">0x199</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">HandleRaftReady</span><span class="p">(</span><span class="mh">0xc17c9b9e10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">450</span> <span class="o">+</span><span class="mh">0x408</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">raftWorker</span><span class="p">).</span><span class="nf">run</span><span class="p">(</span><span class="mh">0xc000264920</span><span class="p">,</span> <span class="mh">0xc000039440</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raft_worker</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">70</span> <span class="o">+</span><span class="mh">0x439</span>
+</span></span><span class="line"><span class="cl"><span class="nx">created</span> <span class="nx">by</span> <span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">Raftstore</span><span class="p">).</span><span class="nx">startWorkers</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">271</span> <span class="o">+</span><span class="mh">0x17b</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>	<span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span>	<span class="mf">2.015</span><span class="nx">s</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>根据报错信息可以找到出错的位置在<code>destroyPeer</code>​，出错的代码：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">meta</span><span class="p">.</span><span class="nx">regions</span><span class="p">[</span><span class="nx">regionID</span><span class="p">];</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">panic</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">Tag</span> <span class="o">+</span> <span class="s">&#34; meta corruption detected&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>出错原因：对于RemoveNode命令的apply，不需要对<code>storeMeta</code>​进行修改，<code>destoryPeer</code>​会负责对<code>storeMeta</code>​的修改。因此下列操作是不应该做的：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">storeMeta</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nb">delete</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">storeMeta</span><span class="p">.</span><span class="nx">regions</span><span class="p">,</span> <span class="nx">targetPeer</span><span class="p">.</span><span class="nx">Id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">storeMeta</span><span class="p">.</span><span class="nx">regionRanges</span><span class="p">.</span><span class="nf">Delete</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">regionItem</span><span class="p">{</span><span class="nx">region</span><span class="p">:</span> <span class="nx">region</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">storeMeta</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Solution：在RemoveNode的Apply处理中去掉</p>
+<h3 id="4confchange-request-timeoutpropose成功但是confchange无法添加到raftlog当中">（4）confChange Request TimeOut（propose成功，但是confChange无法添加到RaftLog当中）</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="o">---</span> <span class="nx">FAIL</span><span class="p">:</span> <span class="nf">TestConfChangeRecover3B</span> <span class="p">(</span><span class="mf">58.85</span><span class="nx">s</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">timeout</span> <span class="p">[</span><span class="nx">recovered</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">panic</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">timeout</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>错误原因：当<code>r.PendingConfIndex != None</code>​，会忽略所有新的confChange Entry而不报错，这就造成了能够<code>ProposeConfChange</code>​成功，但是Entry却没有append进去。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">Raft</span><span class="p">)</span> <span class="nf">appendEntries</span><span class="p">(</span><span class="nx">entries</span> <span class="o">...*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">ents</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">e</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">entries</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">e</span><span class="p">.</span><span class="nx">EntryType</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">EntryType_EntryConfChange</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">PendingConfIndex</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">r</span><span class="p">.</span><span class="nx">PendingConfIndex</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Index</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">ents</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">ents</span><span class="p">,</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">EntryType</span><span class="p">:</span> <span class="nx">e</span><span class="p">.</span><span class="nx">EntryType</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">Term</span><span class="p">:</span>      <span class="nx">e</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">Index</span><span class="p">:</span>     <span class="nx">e</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">Data</span><span class="p">:</span>      <span class="nx">e</span><span class="p">.</span><span class="nx">Data</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">appendEntries</span><span class="p">(</span><span class="nx">ents</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">r</span><span class="p">.</span><span class="nx">Prs</span><span class="p">[</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">].</span><span class="nx">Match</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">r</span><span class="p">.</span><span class="nx">Prs</span><span class="p">[</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">].</span><span class="nx">Next</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">RaftLog</span><span class="p">.</span><span class="nf">LastIndex</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>显然这个条件<code>r.PendingConfIndex != None</code>​是不合适的，错误地忽略了不该忽略的confChange Entry。</p>
+<p>正确的条件应该是：<code>r.PendingConfIndex != None &amp;&amp; r.PendingConfIndex &gt; r.RaftLog.applied</code>​，代表还有confChange Entry没有被Apply（已经Apply的显然可以忽略了）</p>
+<h3 id="5删除节点时会遇到-request-timeout-问题">（5）删除节点时会遇到 Request timeout 问题</h3>
+<p>观察日志，发现一直在进行选举</p>
+<p>​<figure><a class="lightgallery" href="/posts/tinykv_p3b_problems/image-20240121115130-zowanex.png" title="image" data-thumbnail="/posts/tinykv_p3b_problems/image-20240121115130-zowanex.png" data-sub-html="<h2>test log</h2><p>image</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="/posts/tinykv_p3b_problems/image-20240121115130-zowanex.png"
+            data-srcset="/posts/tinykv_p3b_problems/image-20240121115130-zowanex.png, /posts/tinykv_p3b_problems/image-20240121115130-zowanex.png 1.5x, /posts/tinykv_p3b_problems/image-20240121115130-zowanex.png 2x"
+            data-sizes="auto"
+            alt="/posts/tinykv_p3b_problems/image-20240121115130-zowanex.png" width="1745" height="546" />
+    </a><figcaption class="image-caption">test log</figcaption>
+    </figure>​</p>
+<p>解决参考：</p>
+<p><a href="https://github.com/Smith-Cruise/TinyKV-White-Paper/blob/main/Project3-MultiRaftKV.md" target="_blank" rel="noopener noreffer ">TinyKV-White-Paper/Project3-MultiRaftKV.md at main · Smith-Cruise/TinyKV-White-Paper (github.com)</a></p>
+<p>问题原因：只剩两个节点，然后被移除的那个节点正好是 Leader。因为网络是 unreliable，Leader 广播给另一个 Node 的心跳正好被丢了，也就是另一个节点的 commit 并不会被推进，也就是对方节点并不会执行 remove node 操作。而这一切 Leader 并不知道，它自己调用 <code>d.destroyPeer()</code>​ 已经销毁了。此时另一个节点并没有移除 Leader，它会发起选举，但是永远赢不了，因为需要收到被移除 Leader 的投票。</p>
+<p>白皮书提供的解决方法：</p>
+<ol>
+<li>在 propose 阶段，如果已经处于两节点，被移除的正好是 Leader，那么直接拒绝该 propose，并且发起 Transfer Leader 到另一个节点上。Client 到时候会重试 remove node 指令。</li>
+<li>在 apply 阶段 DestroyPeer 上面做一个保险（有必要，虽然用到的概率很低），让 Leader 在自己被 remove 前重复多次发送心跳到目标节点，尝试推动目标节点的 commit。重复多次是为了抵消测试用例的 unreliable</li>
+</ol>
+<p>我这里两个都实现了，不同的是第二个的保险措施我发送的是Append消息而不是心跳消息（我的Raft层实现中follower处理心跳没有推进Commit），并且根据我的测试，重复的次数为5已经够了。</p>
+<p>即使如此，仍然只是在概率上避免了这个问题，不能完美的解决。</p>
+<p>‍</p>
+<h2 id="split相关">Split相关</h2>
+<h3 id="1snap请求处理超时">（1）Snap请求处理超时</h3>
+<p>日志显示总是snap消息的处理问题，总是报错<code>key not in region</code>​，而snap不涉及key。</p>
+<p>问题原因：出在propose上面，对common request进行<code>key in region</code>​检查时应该跳过<code>Snap request</code>​，而这里忘记跳过了。</p>
+<p>解决方法：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">  <span class="c1">// check if key in region
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">req</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">msg</span><span class="p">.</span><span class="nx">Requests</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">req</span><span class="p">.</span><span class="nx">CmdType</span> <span class="o">!=</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">CmdType_Snap</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">util</span><span class="p">.</span><span class="nf">CheckKeyInRegion</span><span class="p">(</span><span class="nf">getRequestKey</span><span class="p">(</span><span class="nx">req</span><span class="p">),</span> <span class="nx">d</span><span class="p">.</span><span class="nf">Region</span><span class="p">());</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">cb</span><span class="p">.</span><span class="nf">Done</span><span class="p">(</span><span class="nf">ErrResp</span><span class="p">(</span><span class="nx">err</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2key-xxx-is-not-in-region-xx">（2）key [xxx&hellip;] is not in region xx</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">key</span> <span class="p">[</span><span class="mi">49</span> <span class="mi">55</span> <span class="mi">32</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span><span class="p">]</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">in</span> <span class="nx">region</span> <span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">end_key</span><span class="p">:</span><span class="s">&#34;13 00000001&#34;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">4</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">4</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">5</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">5</span> <span class="p">&gt;</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">goroutine</span> <span class="mi">327</span> <span class="p">[</span><span class="nx">running</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">storage</span><span class="o">/</span><span class="nx">raft_storage</span><span class="p">.(</span><span class="o">*</span><span class="nx">RegionIterator</span><span class="p">).</span><span class="nf">Seek</span><span class="p">(</span><span class="mh">0xc17cb84ed0</span><span class="p">,</span> <span class="p">{</span><span class="mh">0xc17cc01d50</span><span class="p">,</span> <span class="mh">0xb</span><span class="p">,</span> <span class="mh">0x10</span><span class="err">?</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">storage</span><span class="o">/</span><span class="nx">raft_storage</span><span class="o">/</span><span class="nx">region_reader</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">83</span> <span class="o">+</span><span class="mh">0xec</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">Cluster</span><span class="p">).</span><span class="nf">Scan</span><span class="p">(</span><span class="mh">0xb86019</span><span class="err">?</span><span class="p">,</span> <span class="p">{</span><span class="mh">0xc17cc01d50</span><span class="p">,</span> <span class="mh">0xb</span><span class="p">,</span> <span class="mh">0x10</span><span class="p">},</span> <span class="p">{</span><span class="mh">0xc17c6dddb0</span><span class="p">,</span> <span class="mh">0xb</span><span class="p">,</span> <span class="mh">0x20</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">388</span> <span class="o">+</span><span class="mh">0x322</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="p">.</span><span class="nx">GenericTest</span><span class="p">.</span><span class="nf">func1</span><span class="p">(</span><span class="mh">0x11</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">test_test</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">218</span> <span class="o">+</span><span class="mh">0x533</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="p">.</span><span class="nf">runClient</span><span class="p">(</span><span class="mh">0x0</span><span class="err">?</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">test_test</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">27</span> <span class="o">+</span><span class="mh">0x78</span>
+</span></span><span class="line"><span class="cl"><span class="nx">created</span> <span class="nx">by</span> <span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="p">.</span><span class="nx">SpawnClientsAndWait</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">test_test</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">37</span> <span class="o">+</span><span class="mh">0x85</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>	<span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span>	<span class="mf">6.645</span><span class="nx">s</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>问题原因分析：报错是由Scan操作（对应Snap命令）引起的，Seek()函数产生的报错，错误原因是key不在该region中。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">it</span> <span class="o">*</span><span class="nx">RegionIterator</span><span class="p">)</span> <span class="nf">Seek</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">util</span><span class="p">.</span><span class="nf">CheckKeyInRegion</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">it</span><span class="p">.</span><span class="nx">region</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">it</span><span class="p">.</span><span class="nx">iter</span><span class="p">.</span><span class="nf">Seek</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>猜想哪些情况会导致上述错误的发生：</p>
+<ol>
+<li>处理Snap命令时<code>region := c.GetRegion(key)</code>​获取了错误的region（这种情况有可能是在更新region后，没有及时告知Scheduler）</li>
+<li>目标region在请求过程中发生了变化，导致错误产生（然而Snap请求不包含key字段，没办法在raftStore中通过<code>checkKeyInRegion</code>​检查，所以为了避免Snap的key错误，当region发生变化时，清空所有proposals么？？）</li>
+</ol>
+<p>再仔细打印和观察日志</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mo">03</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">process</span> <span class="nx">common</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Snap</span> <span class="nx">snap</span><span class="p">:&lt;&gt;</span> <span class="p">&gt;</span> 
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mo">03</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">process</span> <span class="nx">common</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Snap</span> <span class="nx">snap</span><span class="p">:&lt;&gt;</span> <span class="p">&gt;</span> 
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mo">03</span> <span class="p">[</span><span class="nx">RaftStore</span><span class="p">]:</span> <span class="nx">process</span> <span class="nx">admin</span> <span class="nx">request</span><span class="p">:</span> <span class="nx">Split</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mf">03.477082</span> <span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">204</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">Cluster</span><span class="p">]</span> <span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">success</span><span class="p">.</span> <span class="nx">req</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Snap</span> <span class="nx">snap</span><span class="p">:&lt;&gt;</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mf">03.477110</span> <span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">204</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">Cluster</span><span class="p">]</span> <span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span><span class="o">/</span><span class="nx">cluster</span><span class="p">.</span><span class="k">go</span><span class="p">:</span> <span class="nx">request</span> <span class="nx">success</span><span class="p">.</span> <span class="nx">req</span><span class="p">:</span> <span class="nx">header</span><span class="p">:&lt;</span><span class="nx">region_id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">peer</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="p">&gt;</span> <span class="nx">requests</span><span class="p">:&lt;</span><span class="nx">cmd_type</span><span class="p">:</span><span class="nx">Snap</span> <span class="nx">snap</span><span class="p">:&lt;&gt;</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mf">03.477145</span> <span class="nx">region_reader</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">84</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">seek</span> <span class="nx">key</span> <span class="p">[</span><span class="mi">51</span> <span class="mi">32</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span><span class="p">]</span> <span class="nx">in</span> <span class="nx">region</span> <span class="mi">1</span> <span class="nx">failed</span><span class="p">:</span> <span class="nx">key</span> <span class="p">[</span><span class="mi">51</span> <span class="mi">32</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span><span class="p">]</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">in</span> <span class="nx">region</span> <span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">end_key</span><span class="p">:</span><span class="s">&#34;18 00000000&#34;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">4</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">4</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">5</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">5</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mo">04</span> <span class="mi">17</span><span class="p">:</span><span class="mi">23</span><span class="p">:</span><span class="mf">03.477158</span> <span class="nx">region_reader</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">84</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">seek</span> <span class="nx">key</span> <span class="p">[</span><span class="mi">56</span> <span class="mi">32</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span><span class="p">]</span> <span class="nx">in</span> <span class="nx">region</span> <span class="mi">1</span> <span class="nx">failed</span><span class="p">:</span> <span class="nx">key</span> <span class="p">[</span><span class="mi">56</span> <span class="mi">32</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span> <span class="mi">48</span><span class="p">]</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">in</span> <span class="nx">region</span> <span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">end_key</span><span class="p">:</span><span class="s">&#34;18 00000000&#34;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">1</span> <span class="nx">version</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">1</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">1</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">2</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">3</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">4</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">4</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">5</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">5</span> <span class="p">&gt;</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>发现错误原因是，已经处理完了Snap请求，但是之后执行了一个Split操作，导致region更新以后，再进行Scan就出错了，这是因为Snap响应中包含一个当前region的指针，Split之后就会导致<code>key not in region</code>​的错误。</p>
+<p>解决方法：在Snap命令之后执行的Split命令不应当造成影响，因此要在返回Snap响应时拷贝一份region，从而避免后面的命令对region的修改</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="k">case</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">CmdType_Snap</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// solve key not in region error: copy region
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">region</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">err</span> <span class="o">:=</span> <span class="nx">util</span><span class="p">.</span><span class="nf">CloneMsg</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nf">Region</span><span class="p">(),</span> <span class="nx">region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// resp.Responses = []*raft_cmdpb.Response{{CmdType: raft_cmdpb.CmdType_Snap, Snap: &amp;raft_cmdpb.SnapResponse{Region: d.Region()}}}
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">resp</span><span class="p">.</span><span class="nx">Responses</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">Responses</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">Response</span><span class="p">{</span><span class="nx">CmdType</span><span class="p">:</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">CmdType_Snap</span><span class="p">,</span> <span class="nx">Snap</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">SnapResponse</span><span class="p">{</span><span class="nx">Region</span><span class="p">:</span> <span class="nx">region</span><span class="p">}})</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">p</span><span class="p">.</span><span class="nx">cb</span><span class="p">.</span><span class="nx">Txn</span> <span class="p">=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">peerStorage</span><span class="p">.</span><span class="nx">Engines</span><span class="p">.</span><span class="nx">Kv</span><span class="p">.</span><span class="nf">NewTransaction</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3test-timed-out-after-10m0s">（3）test timed out after 10m0s</h3>
+<p>这个是困扰我最久的一个错误，在上一篇project3b思路中也提到了。</p>
+<p>错误原因是测试时间太久了。但是我根本不知道为什么这么久，一开始以为是选举太慢了，直到看到了<code>peer</code>​中两个成员：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">  <span class="c1">// An inaccurate difference in region size since last reset.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// split checker is triggered when it exceeds the threshold, it makes split checker not scan the data very often
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// (Used in 3B split)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">SizeDiffHint</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Approximate size of the region.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// It&#39;s updated everytime the split checker scan the data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// (Used in 3B split)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">ApproximateSize</span> <span class="o">*</span><span class="kt">uint64</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>原来split checker会依据<code>SizeDiffHint</code>​来判断region承载的数据量是否超出阈值，从而触发split操作。</p>
+<p>因此要做如下两个修改</p>
+<ol>
+<li>
+<p>Apply Admin_Split完成后，要对<code>SizeDiffHint</code>​和<code>ApproximateSize</code>​更新</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// clear region size
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">d</span><span class="p">.</span><span class="nx">SizeDiffHint</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="nx">d</span><span class="p">.</span><span class="nx">ApproximateSize</span> <span class="p">=</span> <span class="nb">new</span><span class="p">(</span><span class="kt">uint64</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>Apply <code>put/delete</code>​时对<code>SizeDiffHint</code>​进行调整，在 <code>Put</code>​ 的时候，<code>SizeDiffHint</code>​ 加上 <code>key</code>​ 和 <code>value</code>​ 的大小；在 <code>Delete</code>​ 的时候，减去 <code>key</code>​ 的大小。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="k">case</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">CmdType_Put</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">wb</span><span class="p">.</span><span class="nf">SetCF</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Put</span><span class="p">.</span><span class="nx">Cf</span><span class="p">,</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Put</span><span class="p">.</span><span class="nx">Key</span><span class="p">,</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Put</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">d</span><span class="p">.</span><span class="nx">SizeDiffHint</span> <span class="o">+=</span> <span class="nb">uint64</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Put</span><span class="p">.</span><span class="nx">Key</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Put</span><span class="p">.</span><span class="nx">Value</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">CmdType_Delete</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">wb</span><span class="p">.</span><span class="nf">DeleteCF</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Delete</span><span class="p">.</span><span class="nx">Cf</span><span class="p">,</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Delete</span><span class="p">.</span><span class="nx">Key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">d</span><span class="p">.</span><span class="nx">SizeDiffHint</span> <span class="o">-=</span> <span class="nb">uint64</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">Delete</span><span class="p">.</span><span class="nx">Key</span><span class="p">))</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<blockquote>
+<p>当时没仔细看白皮书，它里面有提到过这个问题：</p>
+<p>在 <code>nclient &gt;= 8 &amp;&amp; crash = true &amp;&amp; split = true</code>​ 这种条件下，测试在 Delete 阶段卡死问题，这是因为在 apply <code>CmdType_Put</code>​ 和 <code>CmdType_Delete</code>​ 请求的时候没有更新 <code>SizeDiffHint</code>​。因此需要在 <code>Put</code>​ 的时候，<code>SizeDiffHint</code>​ 加上 <code>key</code>​ 和 <code>value</code>​ 的大小；在 <code>Delete</code>​ 的时候，减去 <code>key</code>​ 的大小。</p>
+</blockquote>
+<h3 id="4runtime-error-index-out-of-range-1-with-length-1">（4）runtime error: index out of range [1] with length 1</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.882060</span> <span class="nx">peer</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">55</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="nx">replicates</span> <span class="nx">peer</span> <span class="nx">with</span> <span class="nx">ID</span> <span class="mi">14</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.885097</span> <span class="nx">peer_storage</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">182</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">5</span> <span class="nx">requesting</span> <span class="nx">snapshot</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.984182</span> <span class="nx">peer_storage</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">341</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="p">[</span><span class="nx">region</span> <span class="mi">1</span><span class="p">]</span> <span class="mi">14</span> <span class="nx">begin</span> <span class="nx">to</span> <span class="nx">apply</span> <span class="nx">snapshot</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.984211</span> <span class="nx">region_task</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">93</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">begin</span> <span class="nx">apply</span> <span class="nx">snap</span> <span class="nx">data</span><span class="p">.</span> <span class="p">[</span><span class="nx">regionId</span><span class="p">:</span> <span class="mi">1</span><span class="p">]</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.984223</span> <span class="nx">region_task</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">137</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">succeed</span> <span class="nx">in</span> <span class="nx">deleting</span> <span class="nx">data</span> <span class="nx">in</span> <span class="k">range</span><span class="p">.</span> <span class="p">[</span><span class="nx">regionId</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">startKey</span><span class="p">:</span> <span class="p">,</span> <span class="nx">endKey</span><span class="p">:</span> <span class="mi">32203030303030303033</span><span class="p">]</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.996109</span> <span class="nx">snap</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">700</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">apply</span> <span class="nx">snapshot</span> <span class="nx">ingested</span> <span class="mi">1</span> <span class="nx">tables</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="mi">2024</span><span class="o">/</span><span class="mo">02</span><span class="o">/</span><span class="mi">16</span> <span class="mo">00</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mf">40.996163</span> <span class="nx">region_task</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">117</span><span class="p">:</span> <span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="mi">37</span><span class="nx">m</span><span class="p">[</span><span class="nx">info</span><span class="p">]</span> <span class="nx">applying</span> <span class="nx">new</span> <span class="nx">data</span><span class="p">.</span> <span class="p">[</span><span class="nx">regionId</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">timeTakes</span><span class="p">:</span> <span class="mf">11.892027</span><span class="nx">ms</span><span class="p">]</span><span class="err"></span><span class="p">[</span><span class="mi">0</span><span class="nx">m</span>
+</span></span><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">runtime</span> <span class="kt">error</span><span class="p">:</span> <span class="nx">index</span> <span class="nx">out</span> <span class="nx">of</span> <span class="k">range</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="nx">with</span> <span class="nx">length</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">goroutine</span> <span class="mi">288</span> <span class="p">[</span><span class="nx">running</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">processAdminRequest</span><span class="p">(</span><span class="mh">0xc191a41e10</span><span class="p">,</span> <span class="mh">0xc00000000a</span><span class="err">?</span><span class="p">,</span> <span class="mh">0x27</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">137</span> <span class="o">+</span><span class="mh">0xe08</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">process</span><span class="p">(</span><span class="mh">0xc191a41e10</span><span class="p">,</span> <span class="mh">0xc224bbdea0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">442</span> <span class="o">+</span><span class="mh">0x347</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">HandleRaftReady</span><span class="p">(</span><span class="mh">0xc191a41e10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">677</span> <span class="o">+</span><span class="mh">0x57f</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">raftWorker</span><span class="p">).</span><span class="nf">run</span><span class="p">(</span><span class="mh">0xc1051b3840</span><span class="p">,</span> <span class="mh">0xc000194d20</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raft_worker</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">70</span> <span class="o">+</span><span class="mh">0x439</span>
+</span></span><span class="line"><span class="cl"><span class="nx">created</span> <span class="nx">by</span> <span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">Raftstore</span><span class="p">).</span><span class="nx">startWorkers</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">271</span> <span class="o">+</span><span class="mh">0x17b</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>	<span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span>	<span class="mf">6.899</span><span class="nx">s</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>报错点在应用Split命令处</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">  <span class="k">case</span> <span class="nx">raft_cmdpb</span><span class="p">.</span><span class="nx">AdminCmdType_Split</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">leftRegion</span> <span class="o">:=</span> <span class="nx">d</span><span class="p">.</span><span class="nf">Region</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// check
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="o">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// backup rawRegion for delete regionRange
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">rawRegion</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">util</span><span class="p">.</span><span class="nf">CloneMsg</span><span class="p">(</span><span class="nx">leftRegion</span><span class="p">,</span> <span class="nx">rawRegion</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// create rightRegion
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// create rightRegion
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">rightRegion</span> <span class="o">:=</span> <span class="nb">new</span><span class="p">(</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">util</span><span class="p">.</span><span class="nf">CloneMsg</span><span class="p">(</span><span class="nx">leftRegion</span><span class="p">,</span> <span class="nx">rightRegion</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// newPeers and split Region
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">newPeers</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Peer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">peer</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">leftRegion</span><span class="p">.</span><span class="nx">Peers</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">newPeers</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">newPeers</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Peer</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">Id</span><span class="p">:</span>      <span class="nx">split</span><span class="p">.</span><span class="nx">NewPeerIds</span><span class="p">[</span><span class="nx">i</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">StoreId</span><span class="p">:</span> <span class="nx">peer</span><span class="p">.</span><span class="nx">StoreId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// [StartKey, SplitKey) -&gt; leftRegion
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// [SplitKey, EndKey) -&gt; rightRegion
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">rightRegion</span><span class="p">.</span><span class="nx">Id</span> <span class="p">=</span> <span class="nx">split</span><span class="p">.</span><span class="nx">NewRegionId</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rightRegion</span><span class="p">.</span><span class="nx">StartKey</span> <span class="p">=</span> <span class="nx">split</span><span class="p">.</span><span class="nx">SplitKey</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rightRegion</span><span class="p">.</span><span class="nx">Peers</span> <span class="p">=</span> <span class="nx">newPeers</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">leftRegion</span><span class="p">.</span><span class="nx">EndKey</span> <span class="p">=</span> <span class="nx">split</span><span class="p">.</span><span class="nx">SplitKey</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">leftRegion</span><span class="p">.</span><span class="nx">RegionEpoch</span><span class="p">.</span><span class="nx">Version</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">rightRegion</span><span class="p">.</span><span class="nx">RegionEpoch</span><span class="p">.</span><span class="nx">Version</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里默认<code>leftRegion.Peers</code>​与<code>split.NewPeerIds</code>​长度相同了，但实际可能没有，因此要修改，保证不会越界即可。</p>
+<p>我这里直接判定长度是否相等了，如果不相等直接返回，等客户端重试。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">leftRegion</span><span class="p">.</span><span class="nx">Peers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">split</span><span class="p">.</span><span class="nx">NewPeerIds</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="5find-no-peer-for-store-4-in-region-id13-start_key0-00000011-end_key2-00000004">（5）find no peer for store 4 in region id:13 start_key:&ldquo;0 00000011&rdquo; end_key:&ldquo;2 00000004&rdquo;</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">panic</span><span class="p">:</span> <span class="nx">find</span> <span class="nx">no</span> <span class="nx">peer</span> <span class="k">for</span> <span class="nx">store</span> <span class="mi">4</span> <span class="nx">in</span> <span class="nx">region</span> <span class="nx">id</span><span class="p">:</span><span class="mi">13</span> <span class="nx">start_key</span><span class="p">:</span><span class="s">&#34;0 00000011&#34;</span> <span class="nx">end_key</span><span class="p">:</span><span class="s">&#34;2 00000004&#34;</span> <span class="nx">region_epoch</span><span class="p">:&lt;</span><span class="nx">conf_ver</span><span class="p">:</span><span class="mi">6</span> <span class="nx">version</span><span class="p">:</span><span class="mi">3</span> <span class="p">&gt;</span> <span class="nx">peers</span><span class="p">:&lt;</span><span class="nx">id</span><span class="p">:</span><span class="mi">14</span> <span class="nx">store_id</span><span class="p">:</span><span class="mi">2</span> <span class="p">&gt;</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">goroutine</span> <span class="mi">271</span> <span class="p">[</span><span class="nx">running</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">processAdminRequest</span><span class="p">(</span><span class="mh">0xc17bdbfe10</span><span class="p">,</span> <span class="mh">0xc10000000a</span><span class="err">?</span><span class="p">,</span> <span class="mh">0x27</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">187</span> <span class="o">+</span><span class="mh">0xdfd</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">process</span><span class="p">(</span><span class="mh">0xc17bdbfe10</span><span class="p">,</span> <span class="mh">0xc20d840140</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">445</span> <span class="o">+</span><span class="mh">0x347</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">peerMsgHandler</span><span class="p">).</span><span class="nf">HandleRaftReady</span><span class="p">(</span><span class="mh">0xc17bdbfe10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">peer_msg_handler</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">680</span> <span class="o">+</span><span class="mh">0x57f</span>
+</span></span><span class="line"><span class="cl"><span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">raftWorker</span><span class="p">).</span><span class="nf">run</span><span class="p">(</span><span class="mh">0xc000130b80</span><span class="p">,</span> <span class="mh">0xc0002a51a0</span><span class="p">,</span> <span class="mh">0x0</span><span class="err">?</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raft_worker</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">70</span> <span class="o">+</span><span class="mh">0x439</span>
+</span></span><span class="line"><span class="cl"><span class="nx">created</span> <span class="nx">by</span> <span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.(</span><span class="o">*</span><span class="nx">Raftstore</span><span class="p">).</span><span class="nx">startWorkers</span>
+</span></span><span class="line"><span class="cl">  <span class="o">/</span><span class="nx">home</span><span class="o">/</span><span class="nx">sszgwdk</span><span class="o">/</span><span class="nx">project</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">raftstore</span><span class="o">/</span><span class="nx">raftstore</span><span class="p">.</span><span class="k">go</span><span class="p">:</span><span class="mi">271</span> <span class="o">+</span><span class="mh">0x17b</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>	<span class="nx">github</span><span class="p">.</span><span class="nx">com</span><span class="o">/</span><span class="nx">pingcap</span><span class="o">-</span><span class="nx">incubator</span><span class="o">/</span><span class="nx">tinykv</span><span class="o">/</span><span class="nx">kv</span><span class="o">/</span><span class="nx">test_raftstore</span>	<span class="mf">7.331</span><span class="nx">s</span>
+</span></span><span class="line"><span class="cl"><span class="nx">FAIL</span>
+</span></span><span class="line"><span class="cl"><span class="nx">rm</span> <span class="o">-</span><span class="nx">rf</span> <span class="o">/</span><span class="nx">tmp</span><span class="o">/*</span><span class="nx">test</span><span class="o">-</span><span class="nx">raftstore</span><span class="o">*</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>报错位置：Apply Split创建新的Peer</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="c1">// Peer: creat and register and start
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">newPeer</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">createPeer</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nx">Id</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">cfg</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">regionTaskSender</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">engine</span><span class="p">,</span> <span class="nx">rightRegion</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>出问题的地方与上一个错误一样，没有对<code>newPeers</code>​是否为空进行判断，也没有对<code>newPeers</code>​是否包含当前store进行检查。</p>
+<p>解决方法：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">    <span class="nx">newPeers</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Peer</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">hasCurrentStore</span> <span class="o">:=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">leftRegion</span><span class="p">.</span><span class="nx">Peers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">split</span><span class="p">.</span><span class="nx">NewPeerIds</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">peer</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">leftRegion</span><span class="p">.</span><span class="nx">Peers</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">split</span><span class="p">.</span><span class="nx">NewPeerIds</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">newPeers</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">newPeers</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">metapb</span><span class="p">.</span><span class="nx">Peer</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nx">Id</span><span class="p">:</span>      <span class="nx">split</span><span class="p">.</span><span class="nx">NewPeerIds</span><span class="p">[</span><span class="nx">i</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">          <span class="nx">StoreId</span><span class="p">:</span> <span class="nx">peer</span><span class="p">.</span><span class="nx">StoreId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="nx">peer</span><span class="p">.</span><span class="nx">StoreId</span> <span class="o">==</span> <span class="nx">d</span><span class="p">.</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">GetId</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nx">hasCurrentStore</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">newPeers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="p">!</span><span class="nx">hasCurrentStore</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-08-14</span>
+            </div></div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/posts/tinykv_p3b_problems/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://example.com/posts/tinykv_p3b_problems/" data-title="TinyKV Project 3B 疑难杂症" data-hashtags="raft,kv,tinykv"><i class="fab fa-twitter fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://example.com/posts/tinykv_p3b_problems/" data-hashtag="raft"><i class="fab fa-facebook-square fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Hacker News" data-sharer="hackernews" data-url="https://example.com/posts/tinykv_p3b_problems/" data-title="TinyKV Project 3B 疑难杂症"><i class="fab fa-hacker-news fa-fw" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 Line" data-sharer="line" data-url="https://example.com/posts/tinykv_p3b_problems/" data-title="TinyKV Project 3B 疑难杂症"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg" aria-hidden="true"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://example.com/posts/tinykv_p3b_problems/" data-title="TinyKV Project 3B 疑难杂症"><i class="fab fa-weibo fa-fw" aria-hidden="true"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw" aria-hidden="true"></i>&nbsp;<a href="/tags/raft/">Raft</a>,&nbsp;<a href="/tags/kv/">Kv</a>,&nbsp;<a href="/tags/tinykv/">Tinykv</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/tinykv_p3b/" class="prev" rel="prev" title="TinyKV Project 3B"><i class="fas fa-angle-left fa-fw" aria-hidden="true"></i>TinyKV Project 3B</a>
+            <a href="/posts/tinykv_p3c/" class="next" rel="next" title="TinyKV Project 3C">TinyKV Project 3C<i class="fas fa-angle-right fa-fw" aria-hidden="true"></i></a></div>
+</div>
+<div id="comments"><div id="valine" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://valine.js.org/">Valine</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">
+                <span id="run-time"></span>
+            </div><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.132.1">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden="true"></i> LoveIt</a>
+                </div><div class="footer-line" itemscope itemtype="http://schema.org/CreativeWork"><i class="far fa-copyright fa-fw" aria-hidden="true"></i><span itemprop="copyrightYear">2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/" target="_blank">SszgwDk</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+    
+        
+        <script async src=" //busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js "></script>
+    
+
+    
+        
+            <section>
+                
+                    <span id="busuanzi_container_value_site_pv"><i class="far fa-eye fa-fw"></i>
+                        
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+
+                
+                    &nbsp;|&nbsp;              
+                
+
+                
+                    <span id="busuanzi_container_value_site_uv"><i class="fa fa-user"></i>
+                        
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+            </section>
+        
+
+        
+        
+    
+
+</div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw" aria-hidden="true"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw" aria-hidden="true"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/valine/valine.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css"><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":50},"comment":{"valine":{"appId":"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI","appKey":"WBmoGyJtbqUswvfLh6L8iEBr","avatar":"mp","el":"#valine","emojiCDN":"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/","emojiMaps":{"100":"1f4af.png","alien":"1f47d.png","anger":"1f4a2.png","angry":"1f620.png","anguished":"1f627.png","astonished":"1f632.png","black_heart":"1f5a4.png","blue_heart":"1f499.png","blush":"1f60a.png","bomb":"1f4a3.png","boom":"1f4a5.png","broken_heart":"1f494.png","brown_heart":"1f90e.png","clown_face":"1f921.png","cold_face":"1f976.png","cold_sweat":"1f630.png","confounded":"1f616.png","confused":"1f615.png","cry":"1f622.png","crying_cat_face":"1f63f.png","cupid":"1f498.png","dash":"1f4a8.png","disappointed":"1f61e.png","disappointed_relieved":"1f625.png","dizzy":"1f4ab.png","dizzy_face":"1f635.png","drooling_face":"1f924.png","exploding_head":"1f92f.png","expressionless":"1f611.png","face_vomiting":"1f92e.png","face_with_cowboy_hat":"1f920.png","face_with_hand_over_mouth":"1f92d.png","face_with_head_bandage":"1f915.png","face_with_monocle":"1f9d0.png","face_with_raised_eyebrow":"1f928.png","face_with_rolling_eyes":"1f644.png","face_with_symbols_on_mouth":"1f92c.png","face_with_thermometer":"1f912.png","fearful":"1f628.png","flushed":"1f633.png","frowning":"1f626.png","ghost":"1f47b.png","gift_heart":"1f49d.png","green_heart":"1f49a.png","grimacing":"1f62c.png","grin":"1f601.png","grinning":"1f600.png","hankey":"1f4a9.png","hear_no_evil":"1f649.png","heart":"2764-fe0f.png","heart_decoration":"1f49f.png","heart_eyes":"1f60d.png","heart_eyes_cat":"1f63b.png","heartbeat":"1f493.png","heartpulse":"1f497.png","heavy_heart_exclamation_mark_ornament":"2763-fe0f.png","hole":"1f573-fe0f.png","hot_face":"1f975.png","hugging_face":"1f917.png","hushed":"1f62f.png","imp":"1f47f.png","innocent":"1f607.png","japanese_goblin":"1f47a.png","japanese_ogre":"1f479.png","joy":"1f602.png","joy_cat":"1f639.png","kiss":"1f48b.png","kissing":"1f617.png","kissing_cat":"1f63d.png","kissing_closed_eyes":"1f61a.png","kissing_heart":"1f618.png","kissing_smiling_eyes":"1f619.png","laughing":"1f606.png","left_speech_bubble":"1f5e8-fe0f.png","love_letter":"1f48c.png","lying_face":"1f925.png","mask":"1f637.png","money_mouth_face":"1f911.png","nauseated_face":"1f922.png","nerd_face":"1f913.png","neutral_face":"1f610.png","no_mouth":"1f636.png","open_mouth":"1f62e.png","orange_heart":"1f9e1.png","partying_face":"1f973.png","pensive":"1f614.png","persevere":"1f623.png","pleading_face":"1f97a.png","pouting_cat":"1f63e.png","purple_heart":"1f49c.png","rage":"1f621.png","relaxed":"263a-fe0f.png","relieved":"1f60c.png","revolving_hearts":"1f49e.png","right_anger_bubble":"1f5ef-fe0f.png","robot_face":"1f916.png","rolling_on_the_floor_laughing":"1f923.png","scream":"1f631.png","scream_cat":"1f640.png","see_no_evil":"1f648.png","shushing_face":"1f92b.png","skull":"1f480.png","skull_and_crossbones":"2620-fe0f.png","sleeping":"1f634.png","sleepy":"1f62a.png","slightly_frowning_face":"1f641.png","slightly_smiling_face":"1f642.png","smile":"1f604.png","smile_cat":"1f638.png","smiley":"1f603.png","smiley_cat":"1f63a.png","smiling_face_with_3_hearts":"1f970.png","smiling_imp":"1f608.png","smirk":"1f60f.png","smirk_cat":"1f63c.png","sneezing_face":"1f927.png","sob":"1f62d.png","space_invader":"1f47e.png","sparkling_heart":"1f496.png","speak_no_evil":"1f64a.png","speech_balloon":"1f4ac.png","star-struck":"1f929.png","stuck_out_tongue":"1f61b.png","stuck_out_tongue_closed_eyes":"1f61d.png","stuck_out_tongue_winking_eye":"1f61c.png","sunglasses":"1f60e.png","sweat":"1f613.png","sweat_drops":"1f4a6.png","sweat_smile":"1f605.png","thinking_face":"1f914.png","thought_balloon":"1f4ad.png","tired_face":"1f62b.png","triumph":"1f624.png","two_hearts":"1f495.png","unamused":"1f612.png","upside_down_face":"1f643.png","weary":"1f629.png","white_frowning_face":"2639-fe0f.png","white_heart":"1f90d.png","wink":"1f609.png","woozy_face":"1f974.png","worried":"1f61f.png","yawning_face":"1f971.png","yellow_heart":"1f49b.png","yum":"1f60b.png","zany_face":"1f92a.png","zipper_mouth_face":"1f910.png","zzz":"1f4a4.png"},"enableQQ":false,"highlight":true,"lang":"zh-CN","pageSize":10,"placeholder":"你的评论 ...","recordIP":true,"serverURLs":"https://leancloud.hugoloveit.com","visitor":true}},"lightgallery":true,"search":{"algoliaAppID":"PASDMWALPK","algoliaIndex":"index.zh-cn","algoliaSearchKey":"b42948e51daaa93df92381c8e2ac0f93","highlightTag":"em","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"algolia"}};</script><script type="text/javascript" src="/js/theme.min.11ec27a93928e59f850531b2018d00bf.js" integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js"></script>
+<script type="text/javascript" src="/js/custom.js"></script></body>
+</html>
