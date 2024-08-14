@@ -112,7 +112,7 @@ publishDir = "public"
   description = "SszgwDk's Blog"
   # website images for Open Graph and Twitter Cards
   # 网站图片, 用于 Open Graph 和 Twitter Cards
-  images = ["/images/lxq.jpg"]
+  images = ["/lxq.jpg"]
 
   # Header config
   # 页面头部导航栏配置
@@ -128,7 +128,7 @@ publishDir = "public"
     [params.header.title]
       # URL of the LOGO
       # LOGO 的 URL
-      logo = "/images/lxq_round.jpg"
+      logo = "/lxq_round.jpg"
       # title name
       # 标题名称
       name = "SszgwDk"
@@ -261,7 +261,7 @@ publishDir = "public"
       gravatarEmail = ""
       # URL of avatar shown in home page
       # 主页显示头像的 URL
-      avatarURL = "/images/lxq.jpg"
+      avatarURL = "/lxq.jpg"
       # title shown in home page (HTML format is supported)
       # 主页显示的网站标题 (支持 HTML 格式)
       title = "SszgwDk"
