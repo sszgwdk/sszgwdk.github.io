@@ -21,7 +21,6 @@ showTableOfContents: true
 outdatedInfoWarning: true
 ---
 
-# CMU15-445 Fall 2023 入门
 
 作为一名新接触存储领域的学生，我在自学了tinykv之后，感觉自己的基础实在是过于薄弱，对于常见的数据库组件，诸如缓存、索引、事务引擎等，都几乎毫无了解，又感到无从抓起。前段时间刚好在[CS自学指南 (csdiy.wiki)](https://csdiy.wiki/)看到CMU15-445这门课，它的project里面所涉及的缓存管理、索引、算子与优化器和并发控制，正是我当前迫切需要的知识。于是前前后后花了两个月左右的时间完成了所有的project，同样是不希望把工夫浪费了，因此写个Blog记录一下。
 
