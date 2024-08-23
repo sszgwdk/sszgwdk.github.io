@@ -1,0 +1,242 @@
+<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>CMU15-445 Fall 2023 Project 0 - SszgwDk</title><meta name=Description content="SszgwDk's Blog"><meta property="og:url" content="https://sszgwdk.github.io/posts/cmu445_p0/">
+<meta property="og:site_name" content="SszgwDk"><meta property="og:title" content="CMU15-445 Fall 2023 Project 0"><meta property="og:description" content="Project 0是一个C++热身项目。使用的C++的版本是C++17，但是知道C++11的知识点就足够了。 C++前置知识 从我的编码过程来看，P0主要涉及"><meta property="og:locale" content="zh_CN"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-08-23T18:47:46+08:00"><meta property="article:modified_time" content="2024-08-23T18:47:46+08:00"><meta property="article:tag" content="CMU15-445"><meta property="article:tag" content="DB"><meta property="og:image" content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:title content="CMU15-445 Fall 2023 Project 0"><meta name=twitter:description content="Project 0是一个C++热身项目。使用的C++的版本是C++17，但是知道C++11的知识点就足够了。 C++前置知识 从我的编码过程来看，P0主要涉及"><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel=icon href=favicon.svg><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://sszgwdk.github.io/posts/cmu445_p0/><link rel=prev href=https://sszgwdk.github.io/posts/cmu445_start/><link rel=stylesheet href=/css/style.min.e318242ad90f61c3313bdf5cbace1116.css integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"CMU15-445 Fall 2023 Project 0","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p0\/"},"image":[{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"posts","keywords":"CMU15-445, DB","wordcount":4253,"url":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p0\/","datePublished":"2024-08-23T18:47:46+08:00","dateModified":"2024-08-23T18:47:46+08:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/avatar.png","width":1080,"height":1080}},"author":{"@type":"Person","name":"SszgwDk"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>所有文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><a class=menu-item href=/about/>关于 </a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i>
+</span></span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="menu-item language" title=选择语言><i class="fa fa-globe" aria-hidden=true></i>
+<select class=language-select id=language-select-desktop onchange="location=this.value"><option value=/posts/cmu445_p0/ selected>简体中文</option></select></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/posts/ title>所有文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a class=menu-item href=/about/ title>关于</a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class=menu-item title=选择语言><i class="fa fa-globe fa-fw" aria-hidden=true></i>
+<select class=language-select onchange="location=this.value"><option value=/posts/cmu445_p0/ selected>简体中文</option></select></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class="toc-content always-active" id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">CMU15-445 Fall 2023 Project 0</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=https://sszgwdk.github.io title=Author target=_blank rel="noopener noreffer author" class=author><i class="fas fa-user-circle fa-fw" aria-hidden=true></i>SszgwDk</a></span>&nbsp;<span class=post-category>收录于 <a href=/categories/db/><i class="far fa-folder fa-fw" aria-hidden=true></i>DB</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw" aria-hidden=true></i>&nbsp;<time datetime=2024-08-23>2024-08-23</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden=true></i>&nbsp;约 4253 字&nbsp;
+<i class="far fa-clock fa-fw" aria-hidden=true></i>&nbsp;预计阅读 9 分钟&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#c前置知识>C++前置知识</a></li><li><a href=#task1-copy-on-write-trie>Task1 Copy-On-Write Trie</a><ul><li><a href=#put>Put</a></li><li><a href=#remove>Remove</a></li></ul></li><li><a href=#task2-concurrent-key-value-store>Task2 Concurrent Key-Value Store</a><ul><li><a href=#get>Get</a></li><li><a href=#put-1>Put</a></li></ul></li><li><a href=#task3-debugging>Task3 Debugging</a></li><li><a href=#task4-sql-string>Task4 SQL String</a></li><li><a href=#风格内存泄漏检查和提交grade>风格、内存泄漏检查和提交Grade</a></li></ul></nav></div></div><div class=content id=content><p>Project 0是一个C++热身项目。使用的C++的版本是C++17，但是知道C++11的知识点就足够了。</p><h2 id=c前置知识>C++前置知识</h2><p>从我的编码过程来看，P0主要涉及智能指针、强制类型转换、右值引用和锁管理四个部分的C++知识。</p><p>C++智能指针分为<code>unique_ptr</code>​、<code>shared_ptr</code>​和<code>weak_ptr</code>​，<code>unique_ptr</code>​是独占的，而<code>shared_ptr</code>​是共享的，底层使用引用计数，当引用为0时会自动释放指针所指向的资源，能够有效避免内存泄漏问题。可以通过<code>std::make_unique</code>​和<code>std::make_shared</code>​创建对应的智能指针。<code>weak_ptr</code>​则是为了协助<code>shared_ptr</code>​，它不会引起引用计数的变化，在bustub中几乎没有用到。</p><p>C++强制类型转换运算符有<code>static_cast</code>​、<code>const_cast</code>​、<code>reinterpret_cast</code>​和<code>dynamic_cast</code>​。重点关注后两个，<code>reinterpret_cast</code>​和<code>dynamic_cast</code>​均可以将<strong>多态基类的指针或引用强制转换为派生类的指针或引用</strong>，区别在于<code>dynamic_cast</code>​会检查转换的安全性，对于不安全的指针转换，会返回<code>nullptr</code>​。<code>dynamic_cast</code>​通过“运行时类型检查”来保证安全性。但是<code>reinterpret_cast</code>​更加灵活，<code>dynamic_cast</code>​不能用于将非多态基类的指针或引用强制转换为派生类的指针或引用——这种转换没法保证安全性，只好用<code>reinterpret_cast</code>​来完成。</p><p>右值引用涉及的概念较多，这里我只简单描述一下我的理解，可能存在谬误。</p><p>首先右值可以简单理解为临时对象，没办法取它的地址。之所以取名右值，是因为在等式右边的表达式值往往是临时对象。C++ 11引入了右值引用类型<code>&&</code>​，可以用来实现<strong>移动语义和完美转发</strong>，在bustub中主要关注移动语义。</p><p>什么是移动语义？举个例子，当一个类中的指针成员申请了堆内存，发生拷贝操作时如果没有自定义拷贝构造函数，会使用默认的拷贝构造函数，即成员逐个赋值，那么就会出现多个指针指向同一块堆内存的情况，在析构时就会出现double free的问题，也就是我们常说的浅拷贝的问题。通过自定义拷贝构造函数实现深拷贝自然可以解决，如果此时我们只需要一份数据，那么深拷贝就增加了很多不必要的资源申请和释放操作。我们完全可以在拷贝的过程中，在新对象的指针赋值之后，将原始对象的指针均置为nullptr，这样就省去了拷贝带来的资源消耗，这也正是移动语义的作用之一。</p><p>那么如何使用右值引用实现移动语义？通过在类中定义**移动构造函数和移动赋值运算符（参数就是该类的右值引用），**这样在传入一个右值时就会调用移动构造函数或移动赋值运算符，有时为了避免拷贝，还可以禁用拷贝构造函数和拷贝赋值运算符。可以参考下面的代码：（来自<code>trie.h</code>​）</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=c1>/// A special type that will block the move constructor and move assignment operator. Used in TrieStore tests.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>class</span> <span class=nc>MoveBlocked</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=k>explicit</span> <span class=n>MoveBlocked</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>future</span><span class=o>&lt;</span><span class=kt>int</span><span class=o>&gt;</span> <span class=n>wait</span><span class=p>)</span> <span class=o>:</span> <span class=n>wait_</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>wait</span><span class=p>))</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>MoveBlocked</span><span class=p>(</span><span class=k>const</span> <span class=n>MoveBlocked</span> <span class=o>&amp;</span><span class=p>)</span> <span class=o>=</span> <span class=k>delete</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>MoveBlocked</span><span class=p>(</span><span class=n>MoveBlocked</span> <span class=o>&amp;&amp;</span><span class=n>that</span><span class=p>)</span> <span class=k>noexcept</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>that</span><span class=p>.</span><span class=n>waited_</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>that</span><span class=p>.</span><span class=n>wait_</span><span class=p>.</span><span class=n>get</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>that</span><span class=p>.</span><span class=n>waited_</span> <span class=o>=</span> <span class=n>waited_</span> <span class=o>=</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=k>operator</span><span class=o>=</span><span class=p>(</span><span class=k>const</span> <span class=n>MoveBlocked</span> <span class=o>&amp;</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>MoveBlocked</span> <span class=o>&amp;</span> <span class=o>=</span> <span class=k>delete</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=k>operator</span><span class=o>=</span><span class=p>(</span><span class=n>MoveBlocked</span> <span class=o>&amp;&amp;</span><span class=n>that</span><span class=p>)</span> <span class=k>noexcept</span> <span class=o>-&gt;</span> <span class=n>MoveBlocked</span> <span class=o>&amp;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>that</span><span class=p>.</span><span class=n>waited_</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>that</span><span class=p>.</span><span class=n>wait_</span><span class=p>.</span><span class=n>get</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>that</span><span class=p>.</span><span class=n>waited_</span> <span class=o>=</span> <span class=n>waited_</span> <span class=o>=</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=o>*</span><span class=k>this</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=kt>bool</span> <span class=n>waited_</span><span class=p>{</span><span class=nb>false</span><span class=p>};</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>future</span><span class=o>&lt;</span><span class=kt>int</span><span class=o>&gt;</span> <span class=n>wait_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>需要注意的是，如果禁用了拷贝构造函数和拷贝赋值函数，此时通过该类的旧对象（此时为左值）创建新的类对象会报错，要通过<code>std::move</code>​将旧对象强制转为右值引用。例如：<code>MoveBlocked b(std::move(a))</code>​或者<code>auto b = std::make_shared&lt;MoveBlocked>(std::move(a))</code>​。此时a中的资源会被转移到b中，如果a未赋新值，后续不应再被使用。</p><p>锁管理比较简单就是<code>std::lock_guard</code>​和<code>std::unique_lock</code>​的使用。可以参考以下文章：<a href=https://blog.csdn.net/qq_28256407/article/details/140214003 target=_blank rel="noopener noreffer">C++ 锁管理：std::lock_guard 和 std::unique_lock 使用方法_c++ lockguard 手动开锁-CSDN博客</a></p><h2 id=task1-copy-on-write-trie>Task1 Copy-On-Write Trie</h2><p>trie字典树这个数据结构不过多介绍，Copy-On-Write即写时复制，用在字典树上是指在进行写操作时，原有树形或数据保持不变（这样还能处理同时进行的读，便于并发操作），对需要修改的节点进行拷贝和修改。</p><p>代码主要在<code>trie.cpp</code>​中，要求实现<code>Get(key)</code>​、<code>Put(key, value)</code>​、<code>Delete(key)</code>​三个接口。</p><p>Get过程和原始trie一致：</p><ol><li>获取根节点<code>root_</code>​</li><li>遍历<code>key</code>​的路径，期间如果节点不存在则返回<code>nullptr</code>​</li><li>如果满足<code>key</code>​的节点不为空且<code>is_value_node_</code>​，通过<code>dynamic_cast&lt;const TrieNodeWithValue&lt;T> *></code>​强转为带值节点指针，如果转换成功，返回<code>value_.get()</code>​</li><li>返回<code>nullptr</code>​</li></ol><p>Put和Remove的实现则相对较难，需要仔细阅读文档理解Copy-On-Write Trie进行Put、Remove的过程。另外需要注意<code>TrieNode</code>​类的定义中，<code>children_</code>​成员指向的子节点类型都是<code>const TrieNode</code>​，所以一个写入操作需要自底向上构建。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=c1>// A TrieNode is a node in a Trie.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>class</span> <span class=nc>TrieNode</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>TrieNode</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>explicit</span> <span class=nf>TrieNode</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>map</span><span class=o>&lt;</span><span class=kt>char</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>shared_ptr</span><span class=o>&lt;</span><span class=k>const</span> <span class=n>TrieNode</span><span class=o>&gt;&gt;</span> <span class=n>children</span><span class=p>)</span> <span class=o>:</span> <span class=n>children_</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>children</span><span class=p>))</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>  <span class=k>virtual</span> <span class=o>~</span><span class=n>TrieNode</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>virtual</span> <span class=k>auto</span> <span class=nf>Clone</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span> <span class=p>{</span> <span class=k>return</span> <span class=n>std</span><span class=o>::</span><span class=n>make_unique</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span><span class=p>(</span><span class=n>children_</span><span class=p>);</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>map</span><span class=o>&lt;</span><span class=kt>char</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>shared_ptr</span><span class=o>&lt;</span><span class=k>const</span> <span class=n>TrieNode</span><span class=o>&gt;&gt;</span> <span class=n>children_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kt>bool</span> <span class=n>is_value_node_</span><span class=p>{</span><span class=nb>false</span><span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=put>Put</h3><ol><li>首先自底向上，创建不存在的<code>TrieNode</code>​（或 <code>TrieNodeWithValue</code>​）</li><li>如果<code>TrieNode</code>​已存在，进行拷贝，将下一层的新节点进行进行插入或覆盖，即 <code>children_[c]=newNode</code>​</li><li>返回<code>Trie(new_root)</code>​</li></ol><p>建议采用递归实现，递归部分伪代码如下</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>void</span> <span class=nf>DiguiPut</span><span class=p>(</span><span class=n>new_ptr</span><span class=p>,</span> <span class=n>key</span><span class=p>,</span> <span class=n>val</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kt>bool</span> <span class=n>flag_find</span> <span class=o>=</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=k>auto</span> <span class=n>iter</span> <span class=o>=</span> <span class=n>new_ptr</span><span class=o>-&gt;</span><span class=n>children_</span><span class=p>.</span><span class=n>find</span><span class=p>(</span><span class=n>key</span><span class=p>.</span><span class=n>at</span><span class=p>(</span><span class=mi>0</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// if found
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>(</span><span class=n>iter</span> <span class=o>!=</span> <span class=n>new_ptr</span><span class=o>-&gt;</span><span class=n>children_</span><span class=p>.</span><span class=n>end</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=n>flag_find</span> <span class=o>=</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// when remian key size &gt; 1, continue to digui
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>if</span> <span class=p>(</span><span class=n>key</span><span class=p>.</span><span class=n>size</span><span class=p>()</span> <span class=o>&gt;</span> <span class=mi>1</span> <span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// (1) clone
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=c1>// (2) digui_put
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=c1>// (3) update children of new_ptr
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>auto</span> <span class=n>node</span> <span class=o>=</span> <span class=n>iter</span><span class=o>-&gt;</span><span class=n>second</span><span class=o>-&gt;</span><span class=n>Clone</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>			<span class=k>auto</span> <span class=n>node_ptr</span> <span class=o>=</span> <span class=n>shared_ptr</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>node</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>			<span class=n>DiguiPut</span><span class=p>(</span><span class=n>node_ptr</span><span class=p>,</span> <span class=n>key</span><span class=p>[</span><span class=mi>1</span><span class=o>:</span><span class=p>],</span> <span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>val</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>			<span class=n>update</span> <span class=n>children</span> <span class=n>of</span> <span class=n>new_ptr</span><span class=p>;</span> <span class=p>(</span><span class=n>iter</span><span class=o>-&gt;</span><span class=n>second</span> <span class=o>=</span> <span class=n>node_ptr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// now key size == 1, means the last element of the key
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=c1>// only need to create a new value node
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=n>create</span> <span class=n>a</span> <span class=k>new</span> <span class=n>value</span> <span class=n>node</span> <span class=n>with</span> <span class=n>val</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>			<span class=n>update</span> <span class=n>children</span> <span class=n>of</span> <span class=n>new_ptr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// if not found, need to create more new empty nodes
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>find_flag</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=p>(</span><span class=n>key</span><span class=p>.</span><span class=n>size</span><span class=p>()</span> <span class=o>&gt;</span> <span class=mi>1</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=n>create</span> <span class=n>empty</span> <span class=n>node</span> <span class=n>and</span> <span class=n>node_ptr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>			<span class=n>DiguiPut</span><span class=p>(</span><span class=n>node_ptr</span><span class=p>,</span> <span class=n>key</span><span class=p>[</span><span class=mi>1</span><span class=o>:</span><span class=p>],</span> <span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>val</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>			<span class=n>update</span> <span class=n>children</span> <span class=n>of</span> <span class=n>new_ptr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// now key.size() == 1, only need to create a new value node
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=n>create</span> <span class=n>a</span> <span class=n>value_node</span> <span class=n>and</span> <span class=n>val_ptr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>			<span class=n>update</span> <span class=n>children</span> <span class=n>of</span> <span class=n>new_ptr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=remove>Remove</h3><p>Remove的过程与Put相近</p><ol><li><p>首先自底向上，找到需要删除的<code>TrieNodeWithValue</code>​（如果是<code>TrieNode</code>​或找不到，说明不需要做任何事）</p><ol><li>如果有孩子节点，转为<code>TrieNode</code>​保留</li><li>如果没有孩子节点，说明需要删除</li></ol></li><li><p>自底向上对路径上的节点进行拷贝，对下一层节点进行修改或删除</p></li><li><p>返回<code>Trie(new_root)</code>​</p></li></ol><h2 id=task2-concurrent-key-value-store>Task2 Concurrent Key-Value Store</h2><p>任务2需要对1中实现的Copy-On-Write Trie进行封装，实现可并发的kv存储，支持多读一写。</p><p>这一部分代码较为简单，锻炼锁的使用。</p><h3 id=get>Get</h3><p>Get操作只需要在访问<code>root_</code>​时加锁，获取<code>root_</code>​之后即可解锁</p><ol><li>对<code>root_lock_</code>​加<code>unique_lock</code>​，获取<code>root_</code>​到临时变量<code>root</code>​，解锁</li><li>调用<code>root.Get&lt;T>(key)</code>​，获取<code>val</code>​</li><li>如果<code>val != nullptr</code>​，返回一个<code>ValueGuard</code>​，否则返回一个<code>std::nullopt</code>​</li></ol><blockquote><p>​<code>std::optional</code>​管理一个可选﻿的容纳值，既可以存在也可以不存在的值。方便后续对**返回空（std::nullopt）**的处理。</p></blockquote><h3 id=put-1>Put</h3><p>写操作之间是冲突的，所以需要加一把大锁<code>write_lock_</code>​</p><ol><li>对<code>write_lock_</code>​加​<code>unique_lock</code>​</li><li>​<code>new_trie = root_.Put&lt;T>(key, std::move(value));</code>​</li><li>对<code>root_lock_</code>​加锁，修改<code>root_ = new_trie</code>​</li><li>解锁<code>root_lock_</code>​和<code>write_lock_</code>​</li></ol><blockquote><p>这里调用<code>root_.Put&lt;T>(key, std::move(value));</code>​时并未对<code>root_lock_</code>​加锁，是因为加了<code>write_lock_</code>​，同一时间不存在对<code>root_</code>​的修改操作。并且是写时拷贝，不会对原始Trie进行修改。</p><p>之后获取访问锁<code>root_lock_</code>​，此时需要更新trie，所以需要避免其他线程读。</p><p>对Get访问root_加锁的根本原因就是避免Put或Remove在同一时刻修改root_，造成错误。</p></blockquote><p>Remove与Put一致。</p><blockquote><p>由于使用的都是<code>shared_ptr</code>​，调用<code>put</code>​、<code>remove</code>​返回新的root节点并完成赋值以后，旧的根节点指针在引用计数变为0后就会自动释放，进而它的所有子节点引用计数也会减一，对应put、remove的key，key路径上的所有旧节点都会被自动释放。</p></blockquote><p>官方给的测试步骤如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ <span class=nb>cd</span> build
+</span></span><span class=line><span class=cl>$ make trie_test trie_store_test -j<span class=k>$(</span>nproc<span class=k>)</span>
+</span></span><span class=line><span class=cl>$ make trie_noncopy_test trie_store_noncopy_test -j<span class=k>$(</span>nproc<span class=k>)</span>
+</span></span><span class=line><span class=cl>$ ./test/trie_test
+</span></span><span class=line><span class=cl>$ ./test/trie_noncopy_test
+</span></span><span class=line><span class=cl>$ ./test/trie_store_test
+</span></span><span class=line><span class=cl>$ ./test/trie_store_noncopy_test
+</span></span></code></pre></td></tr></table></div></div><h2 id=task3-debugging>Task3 Debugging</h2><p>我们需要进行调试的是<code>trie_debug_test.cpp</code>​。我的环境配置VScode + clangd + codeLLDB</p><p>debug步骤：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ <span class=nb>cd</span> build
+</span></span><span class=line><span class=cl>$ make trie_debug_test
+</span></span></code></pre></td></tr></table></div></div><p>编译完成后，根据<code>trie_debug_test.cpp</code>​中的提示设置断点，开启F5调试，起初会报错显示没有配置文件，会自动在<code>.vscode</code>​目录下创建<code>launch.json</code>​，我们需要将<code>program</code>​字段修改成<code>"${workspaceFolder}/build/test/trie_debug_test"</code>​（对照上面的测试脚本<code>./test/trie_test</code>​）</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// 使用 IntelliSense 了解相关属性。 
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// 悬停以查看现有属性的描述。
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nt>&#34;version&#34;</span><span class=p>:</span> <span class=s2>&#34;0.2.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;configurations&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;lldb&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;request&#34;</span><span class=p>:</span> <span class=s2>&#34;launch&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;Debug&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;program&#34;</span><span class=p>:</span> <span class=s2>&#34;${workspaceFolder}/build/test/trie_debug_test&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;args&#34;</span><span class=p>:</span> <span class=p>[],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;cwd&#34;</span><span class=p>:</span> <span class=s2>&#34;${workspaceFolder}&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>然后在题目指定的位置加上断点，再次点击F5，就可以开始调试啦。</p><p>实在不行可以在测试代码里面打印结果。</p><h2 id=task4-sql-string>Task4 SQL String</h2><p>​<code>string_expression.h</code>​：<code>Compute</code>​实现大小写转换，直接用<code>std::tolower</code>​和<code>std::toupper</code>​</p><p>​<code>plan_func_call.cpp</code>​：<code>Planner::GetFuncCallFromFactory</code>​，按照注释要求来写即可</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=c1>// NOLINTNEXTLINE
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>auto</span> <span class=n>Planner</span><span class=o>::</span><span class=n>GetFuncCallFromFactory</span><span class=p>(</span><span class=k>const</span> <span class=n>std</span><span class=o>::</span><span class=n>string</span> <span class=o>&amp;</span><span class=n>func_name</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>AbstractExpressionRef</span><span class=o>&gt;</span> <span class=n>args</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>-&gt;</span> <span class=n>AbstractExpressionRef</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// 1. check if the parsed function name is &#34;lower&#34; or &#34;upper&#34;.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// 2. verify the number of args (should be 1), refer to the test cases for when you should throw an `Exception`.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// 3. return a `StringExpression` std::shared_ptr.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>throw</span> <span class=nf>Exception</span><span class=p>(</span><span class=n>fmt</span><span class=o>::</span><span class=n>format</span><span class=p>(</span><span class=s>&#34;func call {} not supported in planner yet&#34;</span><span class=p>,</span> <span class=n>func_name</span><span class=p>));</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=风格内存泄漏检查和提交grade>风格、内存泄漏检查和提交Grade</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ make format
+</span></span><span class=line><span class=cl>$ make check-clang-tidy-p0
+</span></span></code></pre></td></tr></table></div></div><p>内存泄漏检查会在Debug模式下运行程序时自动执行，如果有内存泄漏，会有错误的报告</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>cmake -DCMAKE_BUILD_TYPE<span class=o>=</span>Debug ..
+</span></span></code></pre></td></tr></table></div></div><p>代码提交到Gradescope：</p><p>在build目录下运行以下代码，得到project0-submission.zip</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>make submit-p0
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ..
+</span></span><span class=line><span class=cl>python3 gradescope_sign.py
+</span></span></code></pre></td></tr></table></div></div><p>最后一步Gradscope这个网站的一些要求，要签个名啥的，之后就可以上传到Gradescope了。</p></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2024-08-23</span></div></div><div class=post-info-line><div class=post-info-md><span><a class=link-to-markdown href=/posts/cmu445_p0/index.md target=_blank>阅读原始文档</a></span></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 Twitter" data-sharer=twitter data-url=https://sszgwdk.github.io/posts/cmu445_p0/ data-title="CMU15-445 Fall 2023 Project 0" data-hashtags=CMU15-445,DB><i class="fab fa-twitter fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=https://sszgwdk.github.io/posts/cmu445_p0/ data-hashtag=CMU15-445><i class="fab fa-facebook-square fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Hacker News" data-sharer=hackernews data-url=https://sszgwdk.github.io/posts/cmu445_p0/ data-title="CMU15-445 Fall 2023 Project 0"><i class="fab fa-hacker-news fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=https://sszgwdk.github.io/posts/cmu445_p0/ data-title="CMU15-445 Fall 2023 Project 0"><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=https://sszgwdk.github.io/posts/cmu445_p0/ data-title="CMU15-445 Fall 2023 Project 0"><i class="fab fa-weibo fa-fw" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw" aria-hidden=true></i>&nbsp;<a href=/tags/cmu15-445/>CMU15-445</a>,&nbsp;<a href=/tags/db/>DB</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav><a href=/posts/cmu445_start/ class=prev rel=prev title="CMU15-445 Fall 2023 入门"><i class="fas fa-angle-left fa-fw" aria-hidden=true></i>CMU15-445 Fall 2023 入门</a></div></div><div id=comments><div id=disqus_thread class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://disqus.com/?ref_noscript>Disqus</a>.</noscript><div id=giscus class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://giscus.app>Giscus</a>.</noscript></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line><span id=run-time></span></div><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.133.0">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2024</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>SszgwDk</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div><script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script><section><span id=busuanzi_container_value_site_pv><i class="far fa-eye fa-fw"></i>
+<span id=busuanzi_value_site_pv></span>
+</span>&nbsp;|&nbsp;
+<span id=busuanzi_container_value_site_uv><i class="fa fa-user"></i>
+<span id=busuanzi_value_site_uv></span></span></section></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css><script type=text/javascript src=https://.disqus.com/embed.js defer></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js></script><script type=text/javascript src=/lib/lunr/lunr.stemmer.support.min.ed0a27121ddab004060c9428cdccae61.js integrity="md5-7QonEh3asAQGDJQozcyuYQ=="></script><script type=text/javascript src=/lib/lunr/lunr.zh.min.5e892728c8a115cebb72cc4d8b9e8eba.js integrity="md5-XoknKMihFc67csxNi56Oug=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:50},comment:{giscus:{category:"Announcements",categoryId:"DIC_kwDOMj6qS84ChrG6",darkTheme:"dark",emitMetadata:"0",inputPosition:"bottom",lang:"zh-CN",lazyLoading:!1,lightTheme:"light",mapping:"pathname",reactionsEnabled:"1",repo:"sszgwdk/comment",repoId:"R_kgDOMj6qSw"}},lightgallery:!0,search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script type=text/javascript src=/js/theme.min.11ec27a93928e59f850531b2018d00bf.js integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js></script><script type=text/javascript src=/js/custom.js></script></body></html>
