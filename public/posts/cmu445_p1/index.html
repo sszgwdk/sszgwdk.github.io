@@ -1,0 +1,291 @@
+<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>CMU15-445 Fall 2023 Project 1 - SszgwDk</title><meta name=Description content="SszgwDk's Blog"><meta property="og:url" content="https://sszgwdk.github.io/posts/cmu445_p1/">
+<meta property="og:site_name" content="SszgwDk"><meta property="og:title" content="CMU15-445 Fall 2023 Project 1"><meta property="og:description" content="Project 1是为Bustub构建一个面向磁盘的缓存管理器（Storage Manager）。 缓存管理器（也叫缓存池，Buffer Pool）是数据库系统"><meta property="og:locale" content="zh_CN"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-08-29T17:54:14+08:00"><meta property="article:modified_time" content="2024-08-29T17:54:14+08:00"><meta property="article:tag" content="CMU15-445"><meta property="article:tag" content="DB"><meta property="og:image" content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:title content="CMU15-445 Fall 2023 Project 1"><meta name=twitter:description content="Project 1是为Bustub构建一个面向磁盘的缓存管理器（Storage Manager）。 缓存管理器（也叫缓存池，Buffer Pool）是数据库系统"><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel=icon href=favicon.svg><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://sszgwdk.github.io/posts/cmu445_p1/><link rel=prev href=https://sszgwdk.github.io/posts/cmu445_p0/><link rel=next href=https://sszgwdk.github.io/posts/cmu445_p2/><link rel=stylesheet href=/css/style.min.e318242ad90f61c3313bdf5cbace1116.css integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"CMU15-445 Fall 2023 Project 1","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p1\/"},"image":[{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"posts","keywords":"CMU15-445, DB","wordcount":6398,"url":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p1\/","datePublished":"2024-08-29T17:54:14+08:00","dateModified":"2024-08-29T17:54:14+08:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/avatar.png","width":1080,"height":1080}},"author":{"@type":"Person","name":"SszgwDk"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>所有文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><a class=menu-item href=/about/>关于 </a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i>
+</span></span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="menu-item language" title=选择语言><i class="fa fa-globe" aria-hidden=true></i>
+<select class=language-select id=language-select-desktop onchange="location=this.value"><option value=/posts/cmu445_p1/ selected>简体中文</option></select></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/posts/ title>所有文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a class=menu-item href=/about/ title>关于</a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class=menu-item title=选择语言><i class="fa fa-globe fa-fw" aria-hidden=true></i>
+<select class=language-select onchange="location=this.value"><option value=/posts/cmu445_p1/ selected>简体中文</option></select></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class="toc-content always-active" id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">CMU15-445 Fall 2023 Project 1</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=https://sszgwdk.github.io title=Author target=_blank rel="noopener noreffer author" class=author><i class="fas fa-user-circle fa-fw" aria-hidden=true></i>SszgwDk</a></span>&nbsp;<span class=post-category>收录于 <a href=/categories/db/><i class="far fa-folder fa-fw" aria-hidden=true></i>DB</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw" aria-hidden=true></i>&nbsp;<time datetime=2024-08-29>2024-08-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden=true></i>&nbsp;约 6398 字&nbsp;
+<i class="far fa-clock fa-fw" aria-hidden=true></i>&nbsp;预计阅读 13 分钟&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#task1-lru-k-replacement-policy>Task#1 LRU-K Replacement Policy</a><ul><li><a href=#evict>Evict</a></li><li><a href=#recordaccess>RecordAccess</a></li><li><a href=#setevictable>SetEvictable</a></li></ul></li><li><a href=#remove>Remove</a></li><li><a href=#task2-disk-scheduler>Task#2 Disk Scheduler</a><ul><li><a href=#schedule>Schedule</a></li><li><a href=#startworkerthread>StartWorkerThread</a></li></ul></li><li><a href=#task-3---buffer-pool-manager>Task #3 - Buffer Pool Manager</a></li></ul></nav></div></div><div class=content id=content><p>Project 1是为Bustub构建一个面向磁盘的缓存管理器（Storage Manager）。</p><p>缓存管理器（也叫缓存池，Buffer Pool）是数据库系统中一个必不可少的组件，可以显著减少数据库的I/O操作，降低数据库负载。在DBMS中，记录是按照行来存储的，但是数据库的读取并不是以行为单位的，否则一次读取（也就是一次 I/O 操作）只能处理一行数据，效率会非常低。Bustub的数据是按页为单位进行读写的，页的大小可以是4KB、8KB、16KB等，是缓存管理的最小单元。</p><p>为了减少磁盘I/O操作，Buffer Pool的作用就是把<strong>最热的数据页</strong>缓存在内存中，下次需要这个数据页时可以直接从内存读取，而不是进行一次磁盘I/O。当需要读取或写入数据时，存储引擎首先检查缓冲池中是否已经存在所需的数据页。如果数据页在缓冲池中，DBMS可以直接从内存中读取或写入数据，避免了磁盘IO的开销。如果数据页不在缓冲池中，DBMS就需要从磁盘加载数据页到缓冲池，并进行相应的操作。</p><p>相应的，缓冲池的管理也涉及到数据页的替换策略。当缓冲池已满时，需要替换一些数据页以腾出空间来存储新的数据页。常见的数据页替换策略包括最近最少使用（LRU）和时钟（Clock）算法。</p><p>有关数据库缓存机制，可以学习参考以下文章：<a href=https://cloud.tencent.com/developer/article/2398498 target=_blank rel="noopener noreffer">MySQL缓冲池（Buffer Pool）深入解析：原理、组成及其在数据操作中的核心作用-腾讯云开发者社区-腾讯云 (tencent.com)</a></p><p>Bustub的缓存管理器需要我们实现三个组件：</p><ol><li>LRU-K页面替换策略：管理缓存页的替换、淘汰</li><li>磁盘调度器：执行底层的磁盘IO操作</li><li>缓存池管理器：封装向上层提供的缓存页面操作接口（<code>FetchPage</code>​、<code>FlushPage</code>​、<code>NewPage</code>​等）</li></ol><h2 id=task1-lru-k-replacement-policy>Task#1 LRU-K Replacement Policy</h2><p>LRU-K是LRU算法的一种衍生，每次替换会优先替换 <strong>k-distance</strong> 最远的一个数。LRU算法实现虽然简单，并且在大量频繁访问热点页面时十分高效，但同样也有一个缺点，就是如果该热点页面在偶然一个时间节点被其他大量仅访问了一次的页面所取代（例如Scan操作），那自然造成了浪费。LRU-K的主要目的是为了解决 LRU 算法"缓存污染"的问题，其核心思想是将“最近使用过 1 次”的判断标准扩展为“最近使用过 K 次”。</p><p>这里的 <strong>k-distance</strong> 是这样定义的：</p><ul><li>如果它访问的次数大于等于 k ，那么它的 k-distance 是倒数第k次访问的时间</li><li>如果它访问的次数小于 k ，那么它的 k-distance 是无穷大 +inf</li></ul><p>驱逐方法是这样的：</p><ul><li><p>如果有 k-distance 为 +inf 的，优先驱逐</p><ul><li>如果有多个 k-distance 为 +inf 的，根据题目的定义，采用FIFO，即最早访问的</li></ul></li><li><p>否则，驱逐 k-distance 最小的</p></li></ul><p>在<code>lru_k_replacer.h</code>​和<code>lru_k_replacer.cpp</code>​中，首先需要完成<code>LRUKNode</code>​类的封装：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>const</span> <span class=n>size_t</span> <span class=n>K_MAX_TIMESTAMP</span> <span class=o>=</span> <span class=n>std</span><span class=o>::</span><span class=n>numeric_limits</span><span class=o>&lt;</span><span class=n>size_t</span><span class=o>&gt;::</span><span class=n>max</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>LRUKNode</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>LRUKNode</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>explicit</span> <span class=nf>LRUKNode</span><span class=p>(</span><span class=n>size_t</span> <span class=n>timestamp</span><span class=p>,</span> <span class=n>size_t</span> <span class=n>k</span><span class=p>,</span> <span class=n>frame_id_t</span> <span class=n>fid</span><span class=p>,</span> <span class=kt>bool</span> <span class=n>is_evictable</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>//   std::weak_ptr&lt;LRUKNode&gt; prev_;
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>//   std::shared_ptr&lt;LRUKNode&gt; next_;
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>auto</span> <span class=nf>GetKDistance</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>size_t</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>GetFrameId</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>frame_id_t</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>GetEarliestAccessTimestamp</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>size_t</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>RemoveAccessHistory</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>UpdateAccessHistory</span><span class=p>(</span><span class=n>size_t</span> <span class=n>timestamp</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>IsEvictable</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=kt>bool</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>SetEvictable</span><span class=p>(</span><span class=kt>bool</span> <span class=n>is_evictable</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** History of last seen K timestamps of this page. Least recent timestamp stored in front. */</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Remove maybe_unused if you start using them. Feel free to change the member variables as you want.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>std</span><span class=o>::</span><span class=n>list</span><span class=o>&lt;</span><span class=n>size_t</span><span class=o>&gt;</span> <span class=n>history_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>k_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>frame_id_t</span> <span class=n>fid_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kt>bool</span> <span class=n>is_evictable_</span><span class=p>{</span><span class=nb>false</span><span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><ol><li>​<code>GetKDistance()</code>​：如果<code>history_.size() &lt; k_</code>​，返回<code>K_MAX_TIMESTAMP</code>​，否则返回<code>history_.front()</code>​（我们在<code>history_</code>​中只需要维护最近的<code>k_</code>​个访问时间戳）</li><li>​<code>GetEarliestAccessTimestamp()</code>​：返回<code>history_.front()</code>​</li><li>​<code>RemoveAccessHistory()</code>​：清空<code>history_</code>​</li><li>​<code>UpdateAccessHistory(ts)</code>​：尾部插入<code>ts</code>​，如果当前大小超过<code>k_</code>​，从头部pop直到<code>size == k_</code>​</li></ol><p>​<code>LRUKReplacer</code>​是实现LRU-K算法的主要类，为了方便算法实现，需要增加几个私有成员。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>class</span> <span class=nc>LRUKReplacer</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl> <span class=p>...</span>
+</span></span><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// TODO(student): implement me! You can replace these member variables as you like.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// Remove maybe_unused if you start using them.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>std</span><span class=o>::</span><span class=n>unordered_map</span><span class=o>&lt;</span><span class=n>frame_id_t</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>shared_ptr</span><span class=o>&lt;</span><span class=n>LRUKNode</span><span class=o>&gt;&gt;</span> <span class=n>node_store_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>list</span><span class=o>&lt;</span><span class=n>frame_id_t</span><span class=o>&gt;</span> <span class=n>less_k_list_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>list</span><span class=o>&lt;</span><span class=n>frame_id_t</span><span class=o>&gt;</span> <span class=n>more_k_list_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>current_timestamp_</span><span class=p>{</span><span class=mi>0</span><span class=p>};</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>curr_size_</span><span class=p>{</span><span class=mi>0</span><span class=p>};</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>replacer_size_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>k_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>mutex</span> <span class=n>latch_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><ol><li>​<code>node_store_</code>​维护缓存页号<code>frame_id_t</code>​（注意区分数据页的概念，对应<code>page_id_t</code>​）到<code>LRUKNode</code>​的映射</li><li>​<code>less_k_list_</code>​和<code>more_k_list_</code>​分别维护访问次数小于和大于等于k的缓存页链表</li></ol><p>我们要实现<code>LRUKReplacer</code>​的以下几个接口：</p><ol><li>​<code>Evict</code>​：淘汰一个缓存页</li><li>​<code>RecordAccess</code>​：记录一次对一个缓存页的访问</li><li>​<code>SetEvictable</code>​：设置一个缓存页的<code>is_evictable_</code>​</li><li>​<code>Remove</code>​：直接删除某个特定的缓存页，不用考虑k-distance</li></ol><p>特别注意，由于<code>node_store_</code>​、<code>less_k_list_</code>​等都不是线程安全的，因此对于每个接口，都要用<code>std::lock_guard&lt;std::mutex> lock(latch_)</code>​加一把大锁。</p><h3 id=evict>Evict</h3><ol><li><p>首先淘汰<code>less_k_list_</code>​中的缓存页，如果不为空</p><ol><li>取出头部的<code>frame_id</code>​并<code>pop_front</code>​，从<code>node_store_</code>​中获取对应的<code>LRUKNode</code>​，记作<code>node</code>​</li><li>​<code>node->RemoveAccessHistory();</code>​</li><li>​<code>node->SetEvictable(false);</code>​</li><li>​<code>curr_size_--;</code>​</li><li>返回<code>true</code>​</li></ol></li><li><p>在考虑淘汰<code>more_k_list_</code>​中的缓存页</p><ol><li>选择链表中<code>EarliestAccessTimestamp</code>​最小的缓存页号<code>frame_id</code>​</li><li>后续步骤同<code>less_k_list_</code>​</li></ol></li></ol><h3 id=recordaccess>RecordAccess</h3><p>这里不用考虑做Evict，由上层调用</p><ol><li>​<code>current_timestamp_++</code>​</li><li>​<code>BUSTUB_ASSERT</code>​检查<code>frame_id</code>​是否合理，即<code>frame_id &lt;= replacer_size_</code>​</li><li>如果当前<code>frame_id</code>​不在<code>node_store_</code>​，说明是一个新节点，需要创建<code>LRUKNode</code>​，默认<code>is_evictable_</code>​设置为false，因此不需要插入<code>more_k_list_</code>​或<code>less_k_list_</code>​</li><li>如果当前<code>frame_id</code>​在<code>node_store_</code>​，说明是一个老节点，需要更新<code>LRUKNode</code>​的<code>history_</code>​，并从原来的list中remove掉，如果<code>is_evictable_=true</code>​，根据kdistance重新插入到<code>more_k_list_</code>​或<code>less_k_list_</code>​尾部</li></ol><h3 id=setevictable>SetEvictable</h3><ol><li>​<code>BUSTUB_ASSERT</code>​检查<code>frame_id</code>​是否合理，即<code>frame_id &lt;= replacer_size_</code>​</li><li>在<code>node_store_</code>​中查找，如果节点不存在，直接返回</li><li>检查<code>is_evictable</code>​是否有变化，无变化直接返回；如果有变化，先从<code>more_k_list_</code>​和<code>less_k_list_</code>​中remove掉，更新节点的<code>is_evictable_</code>​；</li><li>如果<code>set_evictable</code>​为True，<code>curr_size_++</code>​，并根据当前kdistance插入对应链表</li><li>如果为false，<code>curr_size_--</code>​</li></ol><h2 id=remove>Remove</h2><ol><li>同样​<code>BUSTUB_ASSERT</code>​检查<code>frame_id</code>​是否合理</li><li>检查是否能在<code>node_store_</code>​中查找到</li><li>​<code>BUSTUB_ASSERT</code>​检查node是否可淘汰，根据node的<code>is_evictable_</code>​，如果不可淘汰，报错</li><li>从<code>less_k_list_</code>​或<code>more_k_list_</code>​中remove掉</li><li>​<code>node->RemoveAccessHistory();</code>​、<code>node->SetEvictable(false);</code>​</li><li>​<code>node_store_.erase(frame_id);</code>​、<code>curr_size--</code>​</li></ol><h2 id=task2-disk-scheduler>Task#2 Disk Scheduler</h2><p>磁盘调度器，主要实现<code>Schedule(DiskRequest r)</code>​和<code>StartWorkerThread()</code>​两个接口。</p><h3 id=schedule>Schedule</h3><p>主要任务：调度一个request给<code>DiskManager</code>​执行。</p><p>注意这里不需要使用<code>background_thread_</code>​，而是直接将一个请求加入到channel当中，即只有一个线程来Schedule，<code>background_thread_</code>​是用于process这些request的。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>void</span> <span class=n>DiskScheduler</span><span class=o>::</span><span class=n>Schedule</span><span class=p>(</span><span class=n>DiskRequest</span> <span class=n>r</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>request_queue_</span><span class=p>.</span><span class=n>Put</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>r</span><span class=p>));</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=startworkerthread>StartWorkerThread</h3><p>这是后台线程<code>background_thread_</code>​执行的函数，是一个死循环，当收到空的请求时才break掉。</p><p>它负责循环访问channel（<code>request_queue_</code>​），获取其中请求调用<code>disk_manager_</code>​的读写接口进行实际磁盘I/O处理，并且在I/O操作完成后将请求中的<code>callback_</code>​设置为true，用以通知上层（缓存管理器，buffer_pool_manager）操作完成。</p><p>​<code>Channel&lt;std::optionaldiskrequest&amp;gt; request_queue_;</code>​​</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm> * Channels allow for safe sharing of data between threads. This is a multi-producer multi-consumer channel.
+</span></span></span><span class=line><span class=cl><span class=cm> */</span>
+</span></span><span class=line><span class=cl><span class=k>template</span> <span class=o>&lt;</span><span class=k>class</span> <span class=nc>T</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Channel</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>Channel</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=o>~</span><span class=n>Channel</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm>   * @brief Inserts an element into a shared queue.
+</span></span></span><span class=line><span class=cl><span class=cm>   *
+</span></span></span><span class=line><span class=cl><span class=cm>   * @param element The element to be inserted.
+</span></span></span><span class=line><span class=cl><span class=cm>   */</span>
+</span></span><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>Put</span><span class=p>(</span><span class=n>T</span> <span class=n>element</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>unique_lock</span><span class=o>&lt;</span><span class=n>std</span><span class=o>::</span><span class=n>mutex</span><span class=o>&gt;</span> <span class=n>lk</span><span class=p>(</span><span class=n>m_</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>q_</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>element</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>    <span class=n>lk</span><span class=p>.</span><span class=n>unlock</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=n>cv_</span><span class=p>.</span><span class=n>notify_all</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm>   * @brief Gets an element from the shared queue. If the queue is empty, blocks until an element is available.
+</span></span></span><span class=line><span class=cl><span class=cm>   */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>Get</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=n>T</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>unique_lock</span><span class=o>&lt;</span><span class=n>std</span><span class=o>::</span><span class=n>mutex</span><span class=o>&gt;</span> <span class=n>lk</span><span class=p>(</span><span class=n>m_</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>cv_</span><span class=p>.</span><span class=n>wait</span><span class=p>(</span><span class=n>lk</span><span class=p>,</span> <span class=p>[</span><span class=o>&amp;</span><span class=p>]()</span> <span class=p>{</span> <span class=k>return</span> <span class=o>!</span><span class=n>q_</span><span class=p>.</span><span class=n>empty</span><span class=p>();</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>    <span class=n>T</span> <span class=n>element</span> <span class=o>=</span> <span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>q_</span><span class=p>.</span><span class=n>front</span><span class=p>());</span>
+</span></span><span class=line><span class=cl>    <span class=n>q_</span><span class=p>.</span><span class=n>pop</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>element</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>mutex</span> <span class=n>m_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>condition_variable</span> <span class=n>cv_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>queue</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span> <span class=n>q_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>源码<code>src/include/common/channel.h</code>​提供了一个可供多线程安全访问的队列，是一个多生产者多消费者模型。（不过目前我们在磁盘调度器中的使用方式是单生产者单消费者，后续可以优化）</p><p>​<code>disk_manager_</code>​实现的I/O逻辑也比较简单，可以看到在bustub当中，数据页号<code>page_id</code>​与其在数据文件中的偏移的计算公式为<code>offset = page_id * BUSTUB_PAGE_SIZE</code>​。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>void</span> <span class=n>DiskManager</span><span class=o>::</span><span class=n>WritePage</span><span class=p>(</span><span class=n>page_id_t</span> <span class=n>page_id</span><span class=p>,</span> <span class=k>const</span> <span class=kt>char</span> <span class=o>*</span><span class=n>page_data</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>scoped_lock</span> <span class=n>scoped_db_io_latch</span><span class=p>(</span><span class=n>db_io_latch_</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>size_t</span> <span class=n>offset</span> <span class=o>=</span> <span class=k>static_cast</span><span class=o>&lt;</span><span class=n>size_t</span><span class=o>&gt;</span><span class=p>(</span><span class=n>page_id</span><span class=p>)</span> <span class=o>*</span> <span class=n>BUSTUB_PAGE_SIZE</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// set write cursor to offset
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>num_writes_</span> <span class=o>+=</span> <span class=mi>1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>db_io_</span><span class=p>.</span><span class=n>seekp</span><span class=p>(</span><span class=n>offset</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>db_io_</span><span class=p>.</span><span class=n>write</span><span class=p>(</span><span class=n>page_data</span><span class=p>,</span> <span class=n>BUSTUB_PAGE_SIZE</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// check for I/O error
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=n>db_io_</span><span class=p>.</span><span class=n>bad</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>LOG_DEBUG</span><span class=p>(</span><span class=s>&#34;I/O error while writing&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// needs to flush to keep disk file in sync
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>db_io_</span><span class=p>.</span><span class=n>flush</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><blockquote><p>涉及的C++知识：</p><p>​<code>std::promise</code>​ 是C++11并发编程中常用的一个类，常配合<code>std::future</code>​使用。其作用是在一个线程t1中保存一个类型typename T的值，可供相绑定的<code>std::future</code>​对象在另一线程t2中获取。promise一个典型应用场景就是callback函数。</p><p><a href=https://blog.csdn.net/godmaycry/article/details/72844159 target=_blank rel="noopener noreffer">[C++11]std::promise介绍及使用_c++ 中的promise-CSDN博客</a></p><p>条件变量<code>std::condition_variable</code>​用于阻塞一个或多个线程，直到某个线程修改线程间的共享变量，并通过<code>condition_variable</code>​通知其余阻塞线程。从而使得已阻塞的线程可以继续处理后续的操作。经常与<code>unique_lock</code>​搭配使用。</p><p><a href=https://www.cnblogs.com/fenghualong/p/13855360.html target=_blank rel="noopener noreffer">条件变量condition_variable的使用及陷阱 - 封fenghl - 博客园 (cnblogs.com)</a></p></blockquote><h2 id=task-3---buffer-pool-manager>Task #3 - Buffer Pool Manager</h2><p>Buffer Pool Manger有两个主要职责：</p><ol><li>利用<code>DiskScheduler</code>​从磁盘获取数据页并存储在内存当中；</li><li>当明确指示将脏页写入磁盘时，或者当需要逐出页面以便为新页腾出空间时，将脏页写入磁盘。</li></ol><p>我们先来看一下<code>BufferPoolManager</code>​的定义：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Number of pages in the buffer pool. */</span>
+</span></span><span class=line><span class=cl>  <span class=k>const</span> <span class=n>size_t</span> <span class=n>pool_size_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The next page id to be allocated  */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>atomic</span><span class=o>&lt;</span><span class=n>page_id_t</span><span class=o>&gt;</span> <span class=n>next_page_id_</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Array of buffer pool pages. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>Page</span> <span class=o>*</span><span class=n>pages_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Pointer to the disk sheduler. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>DiskScheduler</span><span class=o>&gt;</span> <span class=n>disk_scheduler_</span> <span class=n>__attribute__</span><span class=p>((</span><span class=n>__unused__</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Pointer to the log manager. Please ignore this for P1. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>LogManager</span> <span class=o>*</span><span class=n>log_manager_</span> <span class=nf>__attribute__</span><span class=p>((</span><span class=n>__unused__</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Page table for keeping track of buffer pool pages. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unordered_map</span><span class=o>&lt;</span><span class=n>page_id_t</span><span class=p>,</span> <span class=n>frame_id_t</span><span class=o>&gt;</span> <span class=n>page_table_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Replacer to find unpinned pages for replacement. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>LRUKReplacer</span><span class=o>&gt;</span> <span class=n>replacer_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** List of free frames that don&#39;t have any pages on them. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>list</span><span class=o>&lt;</span><span class=n>frame_id_t</span><span class=o>&gt;</span> <span class=n>free_list_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>mutex</span> <span class=n>latch_</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>其中几个比较重要的成员的作用：</p><ol><li>​<code>pages_</code>​：存储数据页的数组，它的下标对应缓存页号<code>frame_id_t</code>​，<code>Page</code>​中存的是数据页号<code>page_id_t</code>​；</li><li>​<code>disk_scheduler_</code>​：磁盘调度器；</li><li>​<code>page_table_</code>​：数据页号到缓存页号的映射；</li><li>​<code>replacer_</code>​：LRU-K算法，实现页面淘汰；</li><li>​<code>free_list_</code>​：当前空闲的缓存页；</li><li>​<code>latch_</code>​：一把大锁保平安，后续再考虑优化。</li></ol><p>在类的构造函数当中，需要为<code>pages_</code>​申请内存空间，初始化<code>free_list_</code>​，创建<code>disk_scheduler_</code>​和<code>repalcer_</code>​。析构函数中只需要<code>delete[] pages_</code>​。</p><p>​<code>Page</code>​类中还有一个<code>pin_count_</code>​成员需要注意，记录了被不用线程 pinned 的次数，BufferPoolManager 不应该驱逐被 pinned 的 Page。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>class</span> <span class=nc>Page</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>public</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=p>...</span>
+</span></span><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Zeroes out the data that is held within the page. */</span>
+</span></span><span class=line><span class=cl>  <span class=kr>inline</span> <span class=kt>void</span> <span class=n>ResetMemory</span><span class=p>()</span> <span class=p>{</span> <span class=n>memset</span><span class=p>(</span><span class=n>data_</span><span class=p>,</span> <span class=n>OFFSET_PAGE_START</span><span class=p>,</span> <span class=n>BUSTUB_PAGE_SIZE</span><span class=p>);</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The actual data that is stored within a page. */</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Usually this should be stored as `char data_[BUSTUB_PAGE_SIZE]{};`. But to enable ASAN to detect page overflow,
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=c1>// we store it as a ptr.
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kt>char</span> <span class=o>*</span><span class=n>data_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The ID of this page. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>page_id_t</span> <span class=n>page_id_</span> <span class=o>=</span> <span class=n>INVALID_PAGE_ID</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The pin count of this page. */</span>
+</span></span><span class=line><span class=cl>  <span class=kt>int</span> <span class=n>pin_count_</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** True if the page is dirty, i.e. it is different from its corresponding page on disk. */</span>
+</span></span><span class=line><span class=cl>  <span class=kt>bool</span> <span class=n>is_dirty_</span> <span class=o>=</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Page latch. */</span>
+</span></span><span class=line><span class=cl>  <span class=n>ReaderWriterLatch</span> <span class=n>rwlatch_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>我们需要实现头文件 （src/include/buffer/buffer_pool_manager.h） 和源文件（src/buffer/buffer_pool_manager.cpp） 中定义的以下函数：</p><ul><li>​<code>FetchPage(page_id_t page_id)</code>​：用于获取数据页。首先在<code>page_table_</code>​中查找，如果存在，令<code>pin_count++</code>​，在<code>replacer_</code>​中记录以及设置为不可淘汰，然后返回Page；如果没找到，先从<code>free_list_</code>​获取空闲的缓存页，如果为空，利用<code>replacer_->Evict</code>​淘汰一个，如果还是失败，直接返回；如果成功得到一个缓存页，更新<code>page_table_</code>​指向新数据页，如果缓存页对应的旧数据页是脏页，调用<code>DiskScheduler</code>​写回磁盘，完成写操作后，将<code>page_id_</code>​、<code>is_dirty_</code>​、<code>pin_count_</code>​赋新值或初始化，并<code>ResetMemory()</code>​，接着再次利用磁盘调度器读取新数据页中的数据到内存当中，完成读操作后，在<code>replacer_</code>​中记录以及设置为不可淘汰。</li><li>​<code>UnpinPage(page_id_t page_id, bool is_dirty)</code>​：用于减少指定页面的<code>pin_count_</code>​，并在必要时标记页面为脏页。首先检查页面id是否有效，查找<code>page_table_</code>​获取缓存页号，失败均返回false；访问对应数据页的内存，设置<code>is_dirty_</code>​和<code>pin_count_--</code>​，如果减少到0，标记缓存页可淘汰，最后返回true。</li><li>​<code>FlushPage(page_id_t page_id)</code>​：不论<code>is_dirty_</code>​，强制flush到磁盘。</li><li>​<code>NewPage(page_id_t* page_id)</code>​：新建一个数据页。首先从<code>free_list_</code>​（优先）或<code>replacer_</code>​中得到一个缓存页frame_id，如果失败则返回<code>nullptr</code>​；接着调用<code>AllocatePage()</code>​为新数据页分配id，并在<code>page_table_</code>​更新映射关系，如果缓存页对应的旧数据页是脏页，调用<code>DiskScheduler</code>​写回磁盘，完成写操作后，将<code>page_id_</code>​、<code>is_dirty_</code>​、<code>pin_count_</code>​赋新值或初始化，并<code>ResetMemory()</code>​。最后在<code>replacer_</code>​中记录以及设置为不可淘汰。</li><li>​<code>DeletePage(page_id_t page_id)</code>​：删除一个数据页。首先在<code>page_table_</code>​中查找，如果不存在，直接返回true。接着检查<code>pin_count_</code>​，如果大于0，说明不能被删除，返回false。如果满足删除的条件，依次从<code>page_table_</code>​、<code>repalcer_</code>​中删除，并将对应的缓存页添加到<code>free_list_</code>​，并重置该数据页的数据和元数据。</li><li>​<code>FlushAllPages()</code>​：将<code>page_table_</code>​中所有有效的数据页都flush到磁盘，此时可以先批量发出所有I/O请求，然后统一等待I/O完成。</li></ul><p>对于上述所有接口，建议先用一把大锁进行并发控制，确保逻辑正确通过测试后，再考虑性能的优化。</p><p>‍</p></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2024-08-29</span></div></div><div class=post-info-line><div class=post-info-md><span><a class=link-to-markdown href=/posts/cmu445_p1/index.md target=_blank>阅读原始文档</a></span></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 Twitter" data-sharer=twitter data-url=https://sszgwdk.github.io/posts/cmu445_p1/ data-title="CMU15-445 Fall 2023 Project 1" data-hashtags=CMU15-445,DB><i class="fab fa-twitter fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=https://sszgwdk.github.io/posts/cmu445_p1/ data-hashtag=CMU15-445><i class="fab fa-facebook-square fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Hacker News" data-sharer=hackernews data-url=https://sszgwdk.github.io/posts/cmu445_p1/ data-title="CMU15-445 Fall 2023 Project 1"><i class="fab fa-hacker-news fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=https://sszgwdk.github.io/posts/cmu445_p1/ data-title="CMU15-445 Fall 2023 Project 1"><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=https://sszgwdk.github.io/posts/cmu445_p1/ data-title="CMU15-445 Fall 2023 Project 1"><i class="fab fa-weibo fa-fw" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw" aria-hidden=true></i>&nbsp;<a href=/tags/cmu15-445/>CMU15-445</a>,&nbsp;<a href=/tags/db/>DB</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav><a href=/posts/cmu445_p0/ class=prev rel=prev title="CMU15-445 Fall 2023 Project 0"><i class="fas fa-angle-left fa-fw" aria-hidden=true></i>CMU15-445 Fall 2023 Project 0</a>
+<a href=/posts/cmu445_p2/ class=next rel=next title="CMU15-445 Fall 2023 Project 2">CMU15-445 Fall 2023 Project 2<i class="fas fa-angle-right fa-fw" aria-hidden=true></i></a></div></div><div id=comments><div id=disqus_thread class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://disqus.com/?ref_noscript>Disqus</a>.</noscript><div id=giscus class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://giscus.app>Giscus</a>.</noscript></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line><span id=run-time></span></div><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.133.1">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2024</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>SszgwDk</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div><script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script><section><span id=busuanzi_container_value_site_pv><i class="far fa-eye fa-fw"></i>
+<span id=busuanzi_value_site_pv></span>
+</span>&nbsp;|&nbsp;
+<span id=busuanzi_container_value_site_uv><i class="fa fa-user"></i>
+<span id=busuanzi_value_site_uv></span></span></section></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css><script type=text/javascript src=https://.disqus.com/embed.js defer></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js></script><script type=text/javascript src=/lib/lunr/lunr.stemmer.support.min.ed0a27121ddab004060c9428cdccae61.js integrity="md5-7QonEh3asAQGDJQozcyuYQ=="></script><script type=text/javascript src=/lib/lunr/lunr.zh.min.5e892728c8a115cebb72cc4d8b9e8eba.js integrity="md5-XoknKMihFc67csxNi56Oug=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:50},comment:{giscus:{category:"Announcements",categoryId:"DIC_kwDOMj6qS84ChrG6",darkTheme:"dark",emitMetadata:"0",inputPosition:"bottom",lang:"zh-CN",lazyLoading:!1,lightTheme:"light",mapping:"pathname",reactionsEnabled:"1",repo:"sszgwdk/comment",repoId:"R_kgDOMj6qSw"}},lightgallery:!0,search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script type=text/javascript src=/js/theme.min.11ec27a93928e59f850531b2018d00bf.js integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js></script><script type=text/javascript src=/js/custom.js></script></body></html>
