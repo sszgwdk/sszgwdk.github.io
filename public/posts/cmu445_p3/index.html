@@ -1,0 +1,486 @@
+<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>CMU15-445 Fall 2023 Project 3 - SszgwDk</title><meta name=Description content="SszgwDk's Blog"><meta property="og:url" content="https://sszgwdk.github.io/posts/cmu445_p3/">
+<meta property="og:site_name" content="SszgwDk"><meta property="og:title" content="CMU15-445 Fall 2023 Project 3"><meta property="og:description" content="Project 3 Query Execution的任务是实现BusTub执行SQL命令的组件。主要分为： 执行SQL查询的算子 优化规则的实现 Project 3 的难点在于读代码，理解"><meta property="og:locale" content="zh_CN"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-09-01T17:48:47+08:00"><meta property="article:modified_time" content="2024-09-01T17:48:47+08:00"><meta property="article:tag" content="CMU15-445"><meta property="article:tag" content="DB"><meta property="og:image" content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://sszgwdk.github.io/lxq.jpg"><meta name=twitter:title content="CMU15-445 Fall 2023 Project 3"><meta name=twitter:description content="Project 3 Query Execution的任务是实现BusTub执行SQL命令的组件。主要分为： 执行SQL查询的算子 优化规则的实现 Project 3 的难点在于读代码，理解"><meta name=application-name content="LoveIt"><meta name=apple-mobile-web-app-title content="LoveIt"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel=icon href=favicon.svg><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://sszgwdk.github.io/posts/cmu445_p3/><link rel=prev href=https://sszgwdk.github.io/posts/cmu445_p2/><link rel=stylesheet href=/css/style.min.e318242ad90f61c3313bdf5cbace1116.css integrity="md5-4xgkKtkPYcMxO99cus4RFg=="><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"CMU15-445 Fall 2023 Project 3","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p3\/"},"image":[{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"posts","keywords":"CMU15-445, DB","wordcount":11670,"url":"https:\/\/sszgwdk.github.io\/posts\/cmu445_p3\/","datePublished":"2024-09-01T17:48:47+08:00","dateModified":"2024-09-01T17:48:47+08:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":{"@type":"ImageObject","url":"https:\/\/sszgwdk.github.io\/images\/avatar.png","width":1080,"height":1080}},"author":{"@type":"Person","name":"SszgwDk"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>所有文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><a class=menu-item href=/about/>关于 </a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder=搜索文章标题或内容... id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i>
+</span></span><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题><i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="menu-item language" title=选择语言><i class="fa fa-globe" aria-hidden=true></i>
+<select class=language-select id=language-select-desktop onchange="location=this.value"><option value=/posts/cmu445_p3/ selected>简体中文</option></select></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title=SszgwDk><img class="lazyload logo" src=/svg/loading.min.svg data-src=/lxq_round.jpg data-srcset="/lxq_round.jpg, /lxq_round.jpg 1.5x, /lxq_round.jpg 2x" data-sizes=auto alt=/lxq_round.jpg title=/lxq_round.jpg>SszgwDk</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder=搜索文章标题或内容... id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=搜索><i class="fas fa-search fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=清空><i class="fas fa-times-circle fa-fw" aria-hidden=true></i>
+</a><span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>取消</a></div><a class=menu-item href=/posts/ title>所有文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a class=menu-item href=/about/ title>关于</a><a class=menu-item href=https://github.com/dillonzq/LoveIt title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title=切换主题>
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i>
+</a><a href=javascript:void(0); class=menu-item title=选择语言><i class="fa fa-globe fa-fw" aria-hidden=true></i>
+<select class=language-select onchange="location=this.value"><option value=/posts/cmu445_p3/ selected>简体中文</option></select></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>目录</h2><div class="toc-content always-active" id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">CMU15-445 Fall 2023 Project 3</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=https://sszgwdk.github.io title=Author target=_blank rel="noopener noreffer author" class=author><i class="fas fa-user-circle fa-fw" aria-hidden=true></i>SszgwDk</a></span>&nbsp;<span class=post-category>收录于 <a href=/categories/db/><i class="far fa-folder fa-fw" aria-hidden=true></i>DB</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw" aria-hidden=true></i>&nbsp;<time datetime=2024-09-01>2024-09-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden=true></i>&nbsp;约 11670 字&nbsp;
+<i class="far fa-clock fa-fw" aria-hidden=true></i>&nbsp;预计阅读 24 分钟&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>目录</span>
+<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#bustub的sql引擎解析>bustub的SQL引擎解析</a></li><li><a href=#bustub的表结构>bustub的表结构</a></li><li><a href=#火山模型迭代模型>火山模型/迭代模型</a></li><li><a href=#样例算子代码解析>样例算子代码解析</a><ul><li><a href=#project算子>Project算子</a><ul><li><a href=#abstractexecutor>AbstractExecutor</a></li><li><a href=#projectplannode>ProjectPlanNode</a></li><li><a href=#project算子的api实现>Project算子的API实现</a></li></ul></li></ul></li><li><a href=#task1access-method-executors>Task#1：Access Method Executors</a><ul><li><a href=#seqscan>seqscan</a></li><li><a href=#insertupdatedelete>Insert、Update、Delete</a></li><li><a href=#indexscan>IndexScan</a></li><li><a href=#将seqscan优化成indexscan>将Seqscan优化成Indexscan</a></li></ul></li><li><a href=#task2aggregation--join-executors>Task#2：Aggregation & Join Executors</a><ul><li><a href=#aggregation聚合>Aggregation聚合</a></li><li><a href=#nestedloopjoin>NestedLoopJoin</a></li></ul></li><li><a href=#task3hashjoin-executor-and-optimization>Task#3：HashJoin Executor and Optimization</a><ul><li><a href=#hashjoin-executor>HashJoin Executor</a><ul><li><a href=#init>Init</a></li><li><a href=#next>Next</a></li></ul></li><li><a href=#optimizenljashashjoin>OptimizeNLJAsHashJoin</a></li></ul></li><li><a href=#task4sort--limit-executors--window-functions--top-n-optimization>Task#4：Sort + Limit Executors + Window Functions + Top-N Optimization</a><ul><li><a href=#sort>Sort</a></li><li><a href=#limit>limit</a></li><li><a href=#topn>TopN</a></li><li><a href=#sortlimit优化为topn>Sortlimit优化为TopN</a></li><li><a href=#window-functions窗口函数>Window Functions窗口函数</a><ul><li><a href=#任务要求和提示>任务要求和提示</a></li><li><a href=#算子实现>算子实现</a></li></ul></li></ul></li></ul></nav></div></div><div class=content id=content><p>Project 3 Query Execution的任务是实现BusTub执行SQL命令的组件。主要分为：</p><ol><li>执行SQL查询的算子</li><li>优化规则的实现</li></ol><p>Project 3 的难点在于读代码，理解查询引擎的原理，弄懂了之后具体实现起来并不难。</p><h2 id=bustub的sql引擎解析>bustub的SQL引擎解析</h2><p>墙裂推荐下面这篇文章</p><p><a href=https://zhuanlan.zhihu.com/p/587566135 target=_blank rel="noopener noreffer">做个数据库：2022 CMU15-445 Project3 Query Execution - 知乎 (zhihu.com)</a></p><h2 id=bustub的表结构>bustub的表结构</h2><p>这里引用一下 <a href=https://zhuanlan.zhihu.com/p/587566135 target=_blank rel="noopener noreffer">做个数据库：2022 CMU15-445 Project3 Query Execution</a>中的图</p><p>​<figure><a class=lightgallery href=/posts/cmu445_p3/image-20240831145020-d7gxfby.png title=image data-thumbnail=/posts/cmu445_p3/image-20240831145020-d7gxfby.png data-sub-html="<h2>bustub表结构</h2><p>image</p>"><img class=lazyload src=/svg/loading.min.svg data-src=/posts/cmu445_p3/image-20240831145020-d7gxfby.png data-srcset="/posts/cmu445_p3/image-20240831145020-d7gxfby.png, /posts/cmu445_p3/image-20240831145020-d7gxfby.png 1.5x, /posts/cmu445_p3/image-20240831145020-d7gxfby.png 2x" data-sizes=auto alt=/posts/cmu445_p3/image-20240831145020-d7gxfby.png width=888 height=849></a><figcaption class=image-caption>bustub表结构</figcaption></figure>​</p><p>首先，Bustub 有一个 Catalog。Catalog 维护了几张 hashmap，保存了 table id 和 table name 到 table info 的映射关系。table id 由 Catalog 在新建 table 时自动分配，table name 则由用户指定。这里的 table info 包含了一张 table 信息，有 schema、name、id 和指向 table heap 的指针。系统的其他部分想要访问一张 table 时，先使用 name 或 id 从 Catalog 得到 table info，再访问 table info 中的 table heap。</p><p>table heap 是管理 table 数据的结构，包含 table 相关操作。table heap 可能由多个 table page 组成，仅保存其第一个 table page 的 page id。需要访问某个 table page 时，通过 page id 经由 buffer pool 访问。</p><p>table page 是实际存储 table 数据的结构，当需要新增 tuple 时，table heap 会找到当前属于自己的最后一张 table page，尝试插入，若最后一张 table page 已满，则新建一张 table page 插入 tuple。table page 低地址存放 header，tuple 从高地址也就是 table page 尾部开始插入。</p><p>tuple 对应数据表中的一行数据。每个 tuple 都由 RID 唯一标识。RID 由 page id + slot num 构成。tuple 由 value 组成，value 的个数和类型由 table info 中的 schema 指定。value 则是某个字段具体的值，value 本身还保存了类型信息。</p><h2 id=火山模型迭代模型>火山模型/迭代模型</h2><p>本 Project 中的查询算子采用 iterator query processing model，也就是火山模型进行实现。</p><p>每个算子会实现自己的<code>Next()</code>​ 方法来迭代式获取下一个 tuple。当<code>Next()</code>​ 函数被调用时，算子可能返回</p><ol><li>单一的 tuple</li><li>没有更多的 tuple</li></ol><p>在 BusTub 的实现中， Next函数还会额外返回一个 record identifier (RID)，用于唯一标识一个 tuple。所有的算子都在工厂类 <code>executor_factory.cpp</code>​ 中被创建。</p><p>​<figure><a class=lightgallery href=/posts/cmu445_p3/image-20240831145401-lp75xas.png title=image data-thumbnail=/posts/cmu445_p3/image-20240831145401-lp75xas.png data-sub-html="<h2>火山模型</h2><p>image</p>"><img class=lazyload src=/svg/loading.min.svg data-src=/posts/cmu445_p3/image-20240831145401-lp75xas.png data-srcset="/posts/cmu445_p3/image-20240831145401-lp75xas.png, /posts/cmu445_p3/image-20240831145401-lp75xas.png 1.5x, /posts/cmu445_p3/image-20240831145401-lp75xas.png 2x" data-sizes=auto alt=/posts/cmu445_p3/image-20240831145401-lp75xas.png width=720 height=386></a><figcaption class=image-caption>火山模型</figcaption></figure>​</p><p>注意有很多算子属于 pipeline breakers，它会阻塞直到孩子发出所有的元组。我在实现的时候将这个阻塞的过程放在了“Init”方法中。<strong>由于算子可能会被多次调用“Init”来重复使用，在实现的时候可以引入一些标记为进行判断，避免多次阻塞影响性能。</strong></p><h2 id=样例算子代码解析>样例算子代码解析</h2><p>Bustub提供了几个样例算子的实现可供我们参考学习。</p><h3 id=project算子>Project算子</h3><p>Project算子的构造函数如下</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=n>ProjectionExecutor</span><span class=o>::</span><span class=n>ProjectionExecutor</span><span class=p>(</span><span class=n>ExecutorContext</span> <span class=o>*</span><span class=n>exec_ctx</span><span class=p>,</span> <span class=k>const</span> <span class=n>ProjectionPlanNode</span> <span class=o>*</span><span class=n>plan</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                                       <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>AbstractExecutor</span><span class=o>&gt;</span> <span class=o>&amp;&amp;</span><span class=n>child_executor</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>:</span> <span class=n>AbstractExecutor</span><span class=p>(</span><span class=n>exec_ctx</span><span class=p>),</span> <span class=n>plan_</span><span class=p>(</span><span class=n>plan</span><span class=p>),</span> <span class=n>child_executor_</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>child_executor</span><span class=p>))</span> <span class=p>{}</span>
+</span></span></code></pre></td></tr></table></div></div><h4 id=abstractexecutor>AbstractExecutor</h4><p><code>AbstractExecutor</code>​是一个抽象类型，主要的成员是一个<code>ExecutorContext</code>​指针。​<code>ExecutorContext</code>​保存了一个算子运行所需的所有上下文，主要成员包括：</p><ol><li>事务上下文<code>Transaction</code>​</li><li>​<code>Catalog</code>​：提供有关访问、修改表的API</li><li>​<code>BufferPoolManager</code>​：project2的内容，无需多盐</li><li>​<code>TransactionManager</code>​：暂时应该不用管</li><li>​<code>LockManager</code>​：也是事务相关，暂时不管</li><li>​<code>check_exec_set_</code>​：用于优化任务</li><li>​<code>checkOptions</code>​：检查的选项，用于优化任务</li><li>​<code>is_delete_</code>​：23fall已经不使用了</li></ol><p>它提供的API大多是返回私有成员的指针，需要重点关注和使用<code>Catalog</code>​、<code>BufferPoolManager</code>​提供的API。后续P4中<code>Transaction</code>​和<code>TransactionManager</code>​也非常关键。</p><h4 id=projectplannode>ProjectPlanNode</h4><p>其中保存了该算子的执行计划，构造函数如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl> <span class=n>ProjectionPlanNode</span><span class=p>(</span><span class=n>SchemaRef</span> <span class=n>output</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>AbstractExpressionRef</span><span class=o>&gt;</span> <span class=n>expressions</span><span class=p>,</span> <span class=n>AbstractPlanNodeRef</span> <span class=n>child</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=o>:</span> <span class=n>AbstractPlanNode</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>output</span><span class=p>),</span> <span class=p>{</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>child</span><span class=p>)}),</span> <span class=n>expressions_</span><span class=p>(</span><span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>expressions</span><span class=p>))</span> <span class=p>{}</span>
+</span></span></code></pre></td></tr></table></div></div><p>它继承了抽象类<code>AbstractPlanNode</code>​，先来看一下它，主要有两个成员：</p><ol><li>​<code>output_schema_</code>​：一个<code>SchemaRef</code>​类型（<code>Ref</code>​的含义就是<code>std::shared_ptr</code>​）的对象，标明输出结果包含哪些列</li><li>​<code>children_</code>​：这个 plan node的孩子节点</li></ol><p>整个<code>AbstractPlanNode</code>​提供的也是非常基础的API，例如：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=cm>/** Virtual destructor. */</span>
+</span></span><span class=line><span class=cl>  <span class=k>virtual</span> <span class=o>~</span><span class=n>AbstractPlanNode</span><span class=p>()</span> <span class=o>=</span> <span class=k>default</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** @return the schema for the output of this plan node */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>OutputSchema</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=k>const</span> <span class=n>Schema</span> <span class=o>&amp;</span> <span class=p>{</span> <span class=k>return</span> <span class=o>*</span><span class=n>output_schema_</span><span class=p>;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** @return the child of this plan node at index child_idx */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>GetChildAt</span><span class=p>(</span><span class=kt>uint32_t</span> <span class=n>child_idx</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>AbstractPlanNodeRef</span> <span class=p>{</span> <span class=k>return</span> <span class=n>children_</span><span class=p>[</span><span class=n>child_idx</span><span class=p>];</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** @return the children of this plan node */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>GetChildren</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=k>const</span> <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>AbstractPlanNodeRef</span><span class=o>&gt;</span> <span class=o>&amp;</span> <span class=p>{</span> <span class=k>return</span> <span class=n>children_</span><span class=p>;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/** @return the type of this plan node */</span>
+</span></span><span class=line><span class=cl>  <span class=k>virtual</span> <span class=k>auto</span> <span class=nf>GetType</span><span class=p>()</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>PlanType</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>ProjectionPlanNode</code>​类除了继承了<code>AbstractPlanNode</code>​，还增加一个成员​<code>std::vector&lt;AbstractExpressionRef> expressions_;</code>​</p><p>来看看它有啥用，字面意思理解好像就是表达式。</p><p>首先项目文档有关于它的描述：</p><blockquote><p>BusTub 中的 Expression 定义如下：</p><ul><li>​<code>ColumnValueExpression</code>​: directly places a column of the child executor to the output. The syntax <code>#0.0</code>​ means the first column in the first child. You will see something like <code>#0.0 = #1.0</code>​ in a plan for joins.</li><li>​<code>ConstantExpression</code>​: represents a constant value (e.g., <code>1</code>​).</li><li>​<code>ArithmeticExpression</code>​: a tree representing an arithmetic computation. For example, <code>1 + 2</code>​ would be represented by an <code>ArithmeticExpression</code>​ with two <code>ConstantExpression</code>​ (<code>1</code>​ and <code>2</code>​) as children.</li></ul></blockquote><p>实际很好理解：列值表达式、常量表达式、数学表达式</p><p>不论是哪个类型，最重要关注的都是它的<code>Evaluate</code>​和<code>EvaluateJoin</code>​接口。以列值表达式为例：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>Evaluate</span><span class=p>(</span><span class=k>const</span> <span class=n>Tuple</span> <span class=o>*</span><span class=n>tuple</span><span class=p>,</span> <span class=k>const</span> <span class=n>Schema</span> <span class=o>&amp;</span><span class=n>schema</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>Value</span> <span class=k>override</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>tuple</span><span class=o>-&gt;</span><span class=n>GetValue</span><span class=p>(</span><span class=o>&amp;</span><span class=n>schema</span><span class=p>,</span> <span class=n>col_idx_</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>EvaluateJoin</span><span class=p>(</span><span class=k>const</span> <span class=n>Tuple</span> <span class=o>*</span><span class=n>left_tuple</span><span class=p>,</span> <span class=k>const</span> <span class=n>Schema</span> <span class=o>&amp;</span><span class=n>left_schema</span><span class=p>,</span> <span class=k>const</span> <span class=n>Tuple</span> <span class=o>*</span><span class=n>right_tuple</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                    <span class=k>const</span> <span class=n>Schema</span> <span class=o>&amp;</span><span class=n>right_schema</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>Value</span> <span class=k>override</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>tuple_idx_</span> <span class=o>==</span> <span class=mi>0</span> <span class=o>?</span> <span class=n>left_tuple</span><span class=o>-&gt;</span><span class=n>GetValue</span><span class=p>(</span><span class=o>&amp;</span><span class=n>left_schema</span><span class=p>,</span> <span class=n>col_idx_</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>                           <span class=o>:</span> <span class=n>right_tuple</span><span class=o>-&gt;</span><span class=n>GetValue</span><span class=p>(</span><span class=o>&amp;</span><span class=n>right_schema</span><span class=p>,</span> <span class=n>col_idx_</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>很容易理解，就是执行该表达式并返回结果。（列值表达式中<code>GetValue</code>​就代表取某一列的值）</p><h4 id=project算子的api实现>Project算子的API实现</h4><p>根据上面提到的火山模型，各个算子都需要实现<code>Init</code>​和<code>Next</code>​两个API，Project算子的实现如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>void</span> <span class=n>ProjectionExecutor</span><span class=o>::</span><span class=n>Init</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Initialize the child executor
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>child_executor_</span><span class=o>-&gt;</span><span class=n>Init</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>auto</span> <span class=n>ProjectionExecutor</span><span class=o>::</span><span class=n>Next</span><span class=p>(</span><span class=n>Tuple</span> <span class=o>*</span><span class=n>tuple</span><span class=p>,</span> <span class=n>RID</span> <span class=o>*</span><span class=n>rid</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=kt>bool</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>Tuple</span> <span class=n>child_tuple</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Get the next tuple
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>const</span> <span class=k>auto</span> <span class=n>status</span> <span class=o>=</span> <span class=n>child_executor_</span><span class=o>-&gt;</span><span class=n>Next</span><span class=p>(</span><span class=o>&amp;</span><span class=n>child_tuple</span><span class=p>,</span> <span class=n>rid</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>status</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Compute expressions
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>values</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>  <span class=n>values</span><span class=p>.</span><span class=n>reserve</span><span class=p>(</span><span class=n>GetOutputSchema</span><span class=p>().</span><span class=n>GetColumnCount</span><span class=p>());</span>
+</span></span><span class=line><span class=cl>  <span class=k>for</span> <span class=p>(</span><span class=k>const</span> <span class=k>auto</span> <span class=o>&amp;</span><span class=nl>expr</span> <span class=p>:</span> <span class=n>plan_</span><span class=o>-&gt;</span><span class=n>GetExpressions</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>values</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=n>expr</span><span class=o>-&gt;</span><span class=n>Evaluate</span><span class=p>(</span><span class=o>&amp;</span><span class=n>child_tuple</span><span class=p>,</span> <span class=n>child_executor_</span><span class=o>-&gt;</span><span class=n>GetOutputSchema</span><span class=p>()));</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=o>*</span><span class=n>tuple</span> <span class=o>=</span> <span class=n>Tuple</span><span class=p>{</span><span class=n>values</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>GetOutputSchema</span><span class=p>()};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>Init</code>​当中需要注意执行一下子算子的<code>Init</code>​。</p><p>​<code>Next</code>​的逻辑也十分简单：就是先求子节点得到<code>child_tuple</code>​，然后在执行本节点的计划（执行表达式），然后将执行结果返回。</p><h2 id=task1access-method-executors>Task#1：Access Method Executors</h2><h3 id=seqscan>seqscan</h3><p>由于每次获取一个tuple，因此要在算子增加一个迭代器成员，记录当前扫描到的位置。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The sequential scan plan node to be executed */</span>
+</span></span><span class=line><span class=cl>  <span class=k>const</span> <span class=n>SeqScanPlanNode</span> <span class=o>*</span><span class=n>plan_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>TableIterator</span><span class=o>&gt;</span> <span class=n>table_iter_</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>注意<code>next</code>​中每次成功获取一个Tuple，就返回成功。</p><p>但是要注意判定两个条件：</p><ol><li>当前tuple没有被删除，需要检查<code>TupleMeta</code>​中的<code>is_deleted_</code>​</li><li>如果有<code>filter_predicate</code>​（过滤谓词，就是过滤的条件），需要通过<code>Evaluate</code>​检查是否满足该条件。（使用方式可以参考<code>Filter</code>​算子中的Next实现）</li></ol><blockquote><p>​<code>filter_predicate</code>​都是一个<code>Expression</code>​，所有表达式都是通过<code>Evaluate</code>​来进行判断和运算。表达式类型很多，有常量表达式，列值表达式，逻辑表达式，比较表达式等等，需要重点理解。</p></blockquote><h3 id=insertupdatedelete>Insert、Update、Delete</h3><p>Insert、Update和Delete三个算子需要首先关注的是它们均只执行一次，因此要在类成员中加入一个标记。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The insert plan node to be executed*/</span>
+</span></span><span class=line><span class=cl>  <span class=k>const</span> <span class=n>InsertPlanNode</span> <span class=o>*</span><span class=n>plan_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The child executor from which tuples are obtained */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>AbstractExecutor</span><span class=o>&gt;</span> <span class=n>child_executor_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kt>bool</span> <span class=n>is_done_</span> <span class=o>=</span> <span class=nb>false</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>构造函数注意给<code>plan_</code>​和<code>child_executor_</code>​都赋值。</p><p>由于存在子节点，<code>Init</code>​函数需要调用子节点的<code>Init</code>​函数。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=kt>void</span> <span class=n>InsertExecutor</span><span class=o>::</span><span class=n>Init</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>child_executor_</span><span class=o>-&gt;</span><span class=n>Init</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// table_info_ = exec_ctx_-&gt;GetCatalog()-&gt;GetTable(plan_-&gt;GetTableOid());
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>is_done_</span> <span class=o>=</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Insert算子的任务主要有两个：</p><ol><li>将Tuple插入目标表</li><li>如果表上存在索引，在这些索引中更新该Tuple的信息</li></ol><p>具体实现：</p><p><strong>循环</strong>通过调用子节点的<code>Next</code>​获取将被插入的记录。调用<code>InsertTuple</code>​插入记录，返回值为新插入记录的rid。</p><p>在bustub中索引中存储的是对应记录的rid，因此要在目标表中所有的索引表中插入该条记录的索引信息。框架代码中提供了<code>KeyFromTuple</code>​来提取一个tuple在索引中的key，需要注意参数分别是：整个表的Schema（包含所有属性/列）、索引key的Schema、索引key的属性列表。</p><p>同时由文档和注释可知，Next返回的Tuple（出参）是Insert操作影响的行数，实际上就是统计插入的Tuple个数。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>vector</span> <span class=n>values</span><span class=p>{{</span><span class=n>TypeId</span><span class=o>::</span><span class=n>INTEGER</span><span class=p>,</span> <span class=n>count</span><span class=p>}};</span>
+</span></span><span class=line><span class=cl>    <span class=o>*</span><span class=n>tuple</span> <span class=o>=</span> <span class=n>Tuple</span><span class=p>{</span><span class=n>values</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>GetOutputSchema</span><span class=p>()};</span>
+</span></span></code></pre></td></tr></table></div></div><p>Update算子的思路大致与Insert相同，不过要先删除旧的记录、再插入更新后的记录。删除通过<code>table_info_->table_->UpdateTupleMeta(TupleMeta{0, true}, rid)</code>​将对应的tuple标记为<code>is_delete_=true</code>​。</p><p>如何获取更新后的Tuple？通过Update算子的执行计划<code>plan_</code>​中的表达式获取。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>      <span class=c1>// 获取更新后的tuple: Compute expressions
+</span></span></span><span class=line><span class=cl><span class=c1></span>      <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>values</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>      <span class=n>values</span><span class=p>.</span><span class=n>reserve</span><span class=p>(</span><span class=n>plan_</span><span class=o>-&gt;</span><span class=n>target_expressions_</span><span class=p>.</span><span class=n>size</span><span class=p>());</span>
+</span></span><span class=line><span class=cl>      <span class=k>for</span> <span class=p>(</span><span class=k>const</span> <span class=k>auto</span> <span class=o>&amp;</span><span class=nl>expr</span> <span class=p>:</span> <span class=n>plan_</span><span class=o>-&gt;</span><span class=n>target_expressions_</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>values</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=n>expr</span><span class=o>-&gt;</span><span class=n>Evaluate</span><span class=p>(</span><span class=o>&amp;</span><span class=n>todo_tuple</span><span class=p>,</span> <span class=n>child_executor_</span><span class=o>-&gt;</span><span class=n>GetOutputSchema</span><span class=p>()));</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=k>auto</span> <span class=n>update_tuple</span> <span class=o>=</span> <span class=n>Tuple</span><span class=p>{</span><span class=n>values</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>table_info_</span><span class=o>-&gt;</span><span class=n>schema_</span><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>然后调用Insert接口插入新记录。接下来同样需要更新索引表中的对应索引，因为更新后的记录有了新的rid。这个比较简单，也是先删除后插入。</p><p>Delete算子略。</p><h3 id=indexscan>IndexScan</h3><p>索引扫描，即通过查找索引执行扫描操作，仅适用于匹配单个列的值（例如Select * from t1 where x = 1）。Bustub 对哈希索引做了很强的约束，只会对单个列建立索引，也不会插入重复的值。所以，从 IndexScanExecutor 中只可以获取一个或零个 tuple。</p><p>一个关键信息是：<code>IndexScanExecutor</code>​的执行计划<code>plan_</code>​，也就是<code>IndexScanPlanNode</code>​成员，包含一个<code>const ConstantValueExpression *pred_key_;</code>​，代表目标列的目标值。还包含了<code>index_oid_</code>​，代表所需索引表的id。</p><p>在<code>init</code>​中先通过<code>index_oid_</code>​获取索引表<code>hash_table</code>​，再解析出<code>pred_key_</code>​及其值<code>key_val</code>​，构建一个Tuple<code>index_key</code>​，调用<code>hash_table</code>​的<code>ScanKey</code>​接口，得到<code>target_rids_</code>​存储在算子自己的内存当中。</p><p>​<code>Next</code>​的实现较为简单，就是提取<code>target_rids_</code>​中第一个rid，获取对应的Tuple返回即可，如果<code>target_rids</code>​为空或tuple的<code>is_deleted == true</code>​，返回false。另外，同Insert，IndexScan算子只执行一次，因此要在类成员中加入一个标记。</p><h3 id=将seqscan优化成indexscan>将Seqscan优化成Indexscan</h3><p>实现将SeqScanPlanNode优化为IndexScanPlanNode的优化器规则</p><p>函数原型：将原来的<code>SeqScanPlanNode</code>​替换成优化后的执行计划节点（有可能不满足优化的条件导致没有变化）</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>auto</span> <span class=n>Optimizer</span><span class=o>::</span><span class=n>OptimizeSeqScanAsIndexScan</span><span class=p>(</span><span class=k>const</span> <span class=n>bustub</span><span class=o>::</span><span class=n>AbstractPlanNodeRef</span> <span class=o>&amp;</span><span class=n>plan</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>AbstractPlanNodeRef</span>
+</span></span></code></pre></td></tr></table></div></div><p>需要重点关注转化的条件：<strong>仅当谓词中的索引列上有一个相等性测试时，才需要支持此优化器规则（来自的项目文档的翻译）</strong></p><p>实现流程如下：</p><ol><li><p>首先对所有子节点递归调用应用这一优化</p></li><li><p>将优化后的子节点重新赋值给当前节点<code>auto optimized_plan = plan->CloneWithChildren(std::move(optimized_children));</code>​</p></li><li><p>如果当前节点类型为<code>SeqScan</code>​</p><ol><li><p>获取当前节点的谓词<code>predicate</code>​（where 子句）</p></li><li><p>检查是否满足 seqscan -> indexscan 转化的条件：</p><ol><li>表中有索引</li><li>​<code>predicate</code>​不是逻辑运算，而是比较运算：<code>auto cmp_expr = std::dynamic_pointer_cast&lt;ComparisonExpression>(predicate);</code>​</li><li>必须为等值比较（即WHERE v1 = 1）</li><li>存在等值比较对应的列上的索引</li></ol></li><li><p>如果满足，提取indexscan所需的prev_key：<code>auto pred_key = std::dynamic_pointer_cast&lt;ConstantValueExpression>(cmp_expr->GetChildAt(1));</code>​，然后构造一个<code>IndexScanPlanNode</code>​返回</p></li></ol></li><li><p>不满足转化条件，直接返回<code>optimized_plan</code>​</p></li></ol><h2 id=task2aggregation--join-executors>Task#2：Aggregation & Join Executors</h2><h3 id=aggregation聚合>Aggregation聚合</h3><p>Aggregation算子对每个输入Group计算一个<strong>聚合函数</strong>，它只有一个孩子。</p><p>一些Aggregation的例子：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=n>SELECT</span> <span class=n>colA</span><span class=p>,</span> <span class=n>MIN</span><span class=p>(</span><span class=n>colB</span><span class=p>)</span> <span class=n>FROM</span> <span class=n>__mock_table_1</span> <span class=n>GROUP</span> <span class=n>BY</span> <span class=n>colA</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=n>SELECT</span> <span class=nf>COUNT</span><span class=p>(</span><span class=n>colA</span><span class=p>),</span> <span class=n>min</span><span class=p>(</span><span class=n>colB</span><span class=p>)</span> <span class=n>FROM</span> <span class=n>__mock_table_1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=n>SELECT</span> <span class=n>colA</span><span class=p>,</span> <span class=n>MIN</span><span class=p>(</span><span class=n>colB</span><span class=p>)</span> <span class=n>FROM</span> <span class=n>__mock_table_1</span> <span class=n>GROUP</span> <span class=n>BY</span> <span class=n>colA</span> <span class=n>HAVING</span> <span class=n>MAX</span><span class=p>(</span><span class=n>colB</span><span class=p>)</span> <span class=o>&gt;</span> <span class=mi>10</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=n>SELECT</span> <span class=n>DISTINCT</span> <span class=n>colA</span><span class=p>,</span> <span class=n>colB</span> <span class=n>FROM</span> <span class=n>__mock_table_1</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>AggregationExecutor</code>​ <strong>需要先从子执行器中获取所有数据</strong>，然后对这些数据进行分组和聚合操作，最后将结果输出，而这个过程必须在init函数中完成。</p><blockquote><p>即文档中提到的<strong>pipeline breaker。</strong></p><p>聚合操作不能简单地按行（tuple-by-tuple）从其子节点接收数据，然后逐行输出结果。相反，<strong>聚合操作需要先从其子节点获取所有相关的数据，完成整个聚合计算过程（例如计算总和、平均值、最小/最大值等），然后才能产生输出结果</strong>。</p></blockquote><p>实现聚合的一个常见的策略是维护一个哈希表，哈希表的key为Group-by子句对应的列值（对应一个分组），value为一个结果向量（因为可能同时有多个聚合函数）。该项目也是采用该思路。</p><p>框架代码已经完成了哈希表的核心数据结构，key和val都是一个<code>std::vector&lt;Value></code>​，如下：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=n>std</span><span class=o>::</span><span class=n>unordered_map</span><span class=o>&lt;</span><span class=n>AggregateKey</span><span class=p>,</span> <span class=n>AggregateValue</span><span class=o>&gt;</span> <span class=n>ht_</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl><span class=cm>/** AggregateKey represents a key in an aggregation operation */</span>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>AggregateKey</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The group-by values */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>group_bys_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm>   * Compares two aggregate keys for equality.
+</span></span></span><span class=line><span class=cl><span class=cm>   * @param other the other aggregate key to be compared with
+</span></span></span><span class=line><span class=cl><span class=cm>   * @return `true` if both aggregate keys have equivalent group-by expressions, `false` otherwise
+</span></span></span><span class=line><span class=cl><span class=cm>   */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=k>operator</span><span class=o>==</span><span class=p>(</span><span class=k>const</span> <span class=n>AggregateKey</span> <span class=o>&amp;</span><span class=n>other</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=kt>bool</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>uint32_t</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>other</span><span class=p>.</span><span class=n>group_bys_</span><span class=p>.</span><span class=n>size</span><span class=p>();</span> <span class=n>i</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=p>(</span><span class=n>group_bys_</span><span class=p>[</span><span class=n>i</span><span class=p>].</span><span class=n>CompareEquals</span><span class=p>(</span><span class=n>other</span><span class=p>.</span><span class=n>group_bys_</span><span class=p>[</span><span class=n>i</span><span class=p>])</span> <span class=o>!=</span> <span class=n>CmpBool</span><span class=o>::</span><span class=n>CmpTrue</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=cm>/** AggregateValue represents a value for each of the running aggregates */</span>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>AggregateValue</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The aggregate values */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>aggregates_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>我们需要封装一个<code>SimpleAggregationHashTable</code>​用于统计聚合结果，核心数据结构就是上面的<code>ht_</code>​。它已经提供了一个初始化聚合值API，即除了countstar操作，其他聚合操作的初始值都是null。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=cm>/** @return The initial aggregate value for this aggregation executor */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>GenerateInitialAggregateValue</span><span class=p>()</span> <span class=o>-&gt;</span> <span class=n>AggregateValue</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>values</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=k>const</span> <span class=k>auto</span> <span class=o>&amp;</span><span class=nl>agg_type</span> <span class=p>:</span> <span class=n>agg_types_</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>switch</span> <span class=p>(</span><span class=n>agg_type</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>CountStarAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>          <span class=c1>// Count start starts at zero.
+</span></span></span><span class=line><span class=cl><span class=c1></span>          <span class=n>values</span><span class=p>.</span><span class=n>emplace_back</span><span class=p>(</span><span class=n>ValueFactory</span><span class=o>::</span><span class=n>GetIntegerValue</span><span class=p>(</span><span class=mi>0</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>          <span class=k>break</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// 除了CountStar，其他类型一开始都为NULL，注意switch语法，实际上都插入了NULL
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>CountAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>SumAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>MinAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>MaxAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>          <span class=c1>// Others starts at null.
+</span></span></span><span class=line><span class=cl><span class=c1></span>          <span class=n>values</span><span class=p>.</span><span class=n>emplace_back</span><span class=p>(</span><span class=n>ValueFactory</span><span class=o>::</span><span class=n>GetNullValueByType</span><span class=p>(</span><span class=n>TypeId</span><span class=o>::</span><span class=n>INTEGER</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>          <span class=k>break</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=p>{</span><span class=n>values</span><span class=p>};</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>我们需要实现<code>CombineAggregateValues</code>​，功能是当一个输入到达时更新聚合值。几个聚合运算都非常简单，需要注意除了countstar，其他运算都不用考虑null值。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>CombineAggregateValues</span><span class=p>(</span><span class=n>AggregateValue</span> <span class=o>*</span><span class=n>result</span><span class=p>,</span> <span class=k>const</span> <span class=n>AggregateValue</span> <span class=o>&amp;</span><span class=n>input</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>uint32_t</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>agg_exprs_</span><span class=p>.</span><span class=n>size</span><span class=p>();</span> <span class=n>i</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>auto</span> <span class=n>old_val</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>result</span><span class=o>-&gt;</span><span class=n>aggregates_</span><span class=p>[</span><span class=n>i</span><span class=p>];</span>
+</span></span><span class=line><span class=cl>      <span class=k>auto</span> <span class=n>new_val</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>input</span><span class=p>.</span><span class=n>aggregates_</span><span class=p>[</span><span class=n>i</span><span class=p>];</span>
+</span></span><span class=line><span class=cl>      <span class=k>switch</span> <span class=p>(</span><span class=n>agg_types_</span><span class=p>[</span><span class=n>i</span><span class=p>])</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// CountStar：统计NULL
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>CountStarAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>          <span class=o>*</span><span class=n>old_val</span> <span class=o>=</span> <span class=n>old_val</span><span class=o>-&gt;</span><span class=n>Add</span><span class=p>({</span><span class=n>TypeId</span><span class=o>::</span><span class=n>INTEGER</span><span class=p>,</span> <span class=mi>1</span><span class=p>});</span>
+</span></span><span class=line><span class=cl>          <span class=k>break</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Count：统计非NULL
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>case</span> <span class=n>AggregationType</span><span class=o>::</span><span class=nl>CountAggregate</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>          <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>new_val</span><span class=o>-&gt;</span><span class=n>IsNull</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=p>(</span><span class=n>old_val</span><span class=o>-&gt;</span><span class=n>IsNull</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=o>*</span><span class=n>old_val</span> <span class=o>=</span> <span class=n>ValueFactory</span><span class=o>::</span><span class=n>GetIntegerValue</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>*</span><span class=n>old_val</span> <span class=o>=</span> <span class=n>old_val</span><span class=o>-&gt;</span><span class=n>Add</span><span class=p>({</span><span class=n>TypeId</span><span class=o>::</span><span class=n>INTEGER</span><span class=p>,</span> <span class=mi>1</span><span class=p>});</span>
+</span></span><span class=line><span class=cl>          <span class=p>}</span>
+</span></span><span class=line><span class=cl>          <span class=k>break</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=err>。。。</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>接下来需要实现<code>InsertCombine</code>​，即插入一个<code>AggregateKey</code>​和<code>AggregateValue</code>​。这是一个很关键的API。用于在哈希表中插入一个聚合键，同时更新聚合函数结果。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=kt>void</span> <span class=nf>InsertCombine</span><span class=p>(</span><span class=k>const</span> <span class=n>AggregateKey</span> <span class=o>&amp;</span><span class=n>agg_key</span><span class=p>,</span> <span class=k>const</span> <span class=n>AggregateValue</span> <span class=o>&amp;</span><span class=n>agg_val</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=n>ht_</span><span class=p>.</span><span class=n>count</span><span class=p>(</span><span class=n>agg_key</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>ht_</span><span class=p>.</span><span class=n>insert</span><span class=p>({</span><span class=n>agg_key</span><span class=p>,</span> <span class=n>GenerateInitialAggregateValue</span><span class=p>()});</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>CombineAggregateValues</span><span class=p>(</span><span class=o>&amp;</span><span class=n>ht_</span><span class=p>[</span><span class=n>agg_key</span><span class=p>],</span> <span class=n>agg_val</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>接着实现<code>AggregationExecutor</code>​，即聚合算子，首先根据注释，增加两个成员，一个是上面的哈希表，一个是其上的迭代器，用于记录当前位置。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The aggregation plan node */</span>
+</span></span><span class=line><span class=cl>  <span class=k>const</span> <span class=n>AggregationPlanNode</span> <span class=o>*</span><span class=n>plan_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** The child executor that produces tuples over which the aggregation is computed */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>AbstractExecutor</span><span class=o>&gt;</span> <span class=n>child_executor_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Simple aggregation hash table */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>SimpleAggregationHashTable</span><span class=o>&gt;</span> <span class=n>aht_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/** Simple aggregation hash table iterator */</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unique_ptr</span><span class=o>&lt;</span><span class=n>SimpleAggregationHashTable</span><span class=o>::</span><span class=n>Iterator</span><span class=o>&gt;</span> <span class=n>aht_iterator_</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>根据上面的分析，聚合算子的<code>Init</code>​函数要先从子节点获取所有相关的数据，完成整个聚合计算的过程，计算结果记录在哈希表中，<code>Next</code>​通过迭代器返回结果。</p><p>因此，<code>Init</code>​的执行流程如下：</p><ol><li><p>初始化子算子</p></li><li><p>创建一个<code>SimpleAggregationHashTable</code>​</p></li><li><p>如果grouby子句为空，则在哈希表插入一个空的key，并初始化对应的val</p></li><li><p>循环执行完子算子（pipeline breaker）：对每一个tuple</p><ol><li>通过<code>MakeAggregateKey</code>​和<code>MakeAggregateValue</code>​构建聚合key和val</li><li>调用上面的<code>InsertCombine</code>​插入并更新聚合值</li></ol></li><li><p>聚合完毕，构建iter（因为可能同时有多个聚合函数）</p></li></ol><p>​<code>Next</code>​函数则是通过上面构建的iter聚合的结果，每次返回一个结果。需要注意的是返回的结果形式，文档中有一句话指明了这一点。</p><blockquote><p>The output schema consists of the group-by columns followed by the aggregation columns.</p></blockquote><p>即聚合键中的所有列+聚合值的所有列。</p><h3 id=nestedloopjoin>NestedLoopJoin</h3><p>目前只要实现InnerJoin和LeftJoin：</p><ol><li>InnerJoin：两个表中都有</li><li>LeftJoin：左表的所有记录，右表中没有的取NULL</li></ol><p><a href=https://blog.csdn.net/mfysss/article/details/135486067 target=_blank rel="noopener noreffer">一次性讲清楚INNER JOIN、LEFT JOIN、RIGHT JOIN的区别和用法详解-CSDN博客</a></p><p>NestedLoopJoin的原理很简单，就是通过遍历获得匹配的行。</p><p>在本项目中，遍历是通过<code>left_executor_->Next</code>​和<code>right_executor_->Next</code>​实现，通过子算子的<code>init</code>​可以将指针重新置于表的起始位置。</p><p>对于InnerJoin和LeftJoin，都是外层遍历左表，内层遍历右表，但是由于每次只返回一个Tuple，所以每次结束要保留各种状态：</p><ol><li>左右表当前的指针位置已经通过子算子的<code>Next</code>​实现了控制，只要不调用就不会变</li><li>​<code>bool continue_flag_</code>​：记录当前<code>Next</code>​函数运行的状态，若为True，代表当前左表行存在，且需要继续匹配剩下的右表行**（对于左表的一行，能够匹配的右表行可能有很多个 ），此时不需要调用左算子的Next，右算子也不需要Init；**如果为False，下次调用<code>Next</code>​时，就会遍历下一个左表行(<code>left_executor_->Next</code>​)，然后右表指针回到起点(<code>right_executor_->Init()</code>​)。</li></ol><p>关于如何判断是否匹配，文档中已经指明，通过<code>predicate->EvaluateJoin</code>​。</p><h2 id=task3hashjoin-executor-and-optimization>Task#3：HashJoin Executor and Optimization</h2><p>HashJoin显然是比NestedLoopJoin那种多级遍历的方式更高效的Join方法，不过要满足一定的条件才行。</p><h3 id=hashjoin-executor>HashJoin Executor</h3><p>根据文档，HashJoin使用的基本前提就是谓词<code>predicate</code>​是以下形式：</p><p>​<code>&lt;column expr> = column AND column = column AND ...</code>​</p><p>而HashJoin常见的实现就是用一个哈希表，先遍历并存储右表的所有行；然后遍历左表的所有行时，在哈希表中查找是否存在Key相等的元素，<strong>以key相等作为匹配的条件。</strong></p><p>文档中提示可以参考上个任务聚合算子中的哈希表自定义<code>HashJoinKey</code>​和<code>SimpleHashJoinHashTable</code>​。其实不论是聚合key和聚合value，主要成员都是<code>std::vector&lt;Value></code>​，所以<code>HashJoinKey</code>​也是一样的。注意为了能够让<code>HashJoinKey</code>​作为<code>std::unordered_map</code>​的key，要在其上自定义实现<code>std::hash</code>​。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=k>namespace</span> <span class=n>bustub</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=cm>/** HashJoinKeyrepresents a key in an join operation */</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>SimpleHashJoinHashTable</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl> <span class=k>private</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>unordered_map</span><span class=o>&lt;</span><span class=n>HashJoinKey</span><span class=p>,</span> <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Tuple</span><span class=o>&gt;&gt;</span> <span class=n>ht_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>HashJoinKey</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>hash_keys_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/**
+</span></span></span><span class=line><span class=cl><span class=cm>   * Compares two hash joi keys for equality
+</span></span></span><span class=line><span class=cl><span class=cm>   * @param other the other hash join key to be compared with
+</span></span></span><span class=line><span class=cl><span class=cm>   * @return `true` if both hash join key have equivalent values
+</span></span></span><span class=line><span class=cl><span class=cm>   */</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=k>operator</span><span class=o>==</span><span class=p>(</span><span class=k>const</span> <span class=n>HashJoinKey</span> <span class=o>&amp;</span><span class=n>other</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=kt>bool</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>uint32_t</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>other</span><span class=p>.</span><span class=n>hash_keys_</span><span class=p>.</span><span class=n>size</span><span class=p>();</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=p>(</span><span class=n>hash_keys_</span><span class=p>[</span><span class=n>i</span><span class=p>].</span><span class=n>CompareEquals</span><span class=p>(</span><span class=n>other</span><span class=p>.</span><span class=n>hash_keys_</span><span class=p>[</span><span class=n>i</span><span class=p>])</span> <span class=o>!=</span> <span class=n>CmpBool</span><span class=o>::</span><span class=n>CmpTrue</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=nb>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nb>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>  <span class=c1>// namespace bustub
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>namespace</span> <span class=n>std</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=cm>/** Implements std::hash on AggregateKey */</span>
+</span></span><span class=line><span class=cl><span class=c1>// 定义了这个才可以用std::unordered_map&lt;HashJoinKey, std::vector&lt;Tuple *&gt;&gt;
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>template</span> <span class=o>&lt;&gt;</span>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>hash</span><span class=o>&lt;</span><span class=n>bustub</span><span class=o>::</span><span class=n>HashJoinKey</span><span class=o>&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>operator</span><span class=p>()(</span><span class=k>const</span> <span class=n>bustub</span><span class=o>::</span><span class=n>HashJoinKey</span> <span class=o>&amp;</span><span class=n>join_key</span><span class=p>)</span> <span class=k>const</span> <span class=o>-&gt;</span> <span class=n>std</span><span class=o>::</span><span class=n>size_t</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>size_t</span> <span class=n>curr_hash</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=k>const</span> <span class=k>auto</span> <span class=o>&amp;</span><span class=nl>key</span> <span class=p>:</span> <span class=n>join_key</span><span class=p>.</span><span class=n>hash_keys_</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>key</span><span class=p>.</span><span class=n>IsNull</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// 对每一个非空的value对象，计算出它的哈希值
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>curr_hash</span> <span class=o>=</span> <span class=n>bustub</span><span class=o>::</span><span class=n>HashUtil</span><span class=o>::</span><span class=n>CombineHashes</span><span class=p>(</span><span class=n>curr_hash</span><span class=p>,</span> <span class=n>bustub</span><span class=o>::</span><span class=n>HashUtil</span><span class=o>::</span><span class=n>HashValue</span><span class=p>(</span><span class=o>&amp;</span><span class=n>key</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>curr_hash</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>​<code>SimpleHashJoinHashTable</code>​的实现则更为简单，定义插入、查询的接口即可。</p><p>除此之外，还要在算子中定义获取Key的方法，同样参照聚合算子中获取聚合键的实现（<code>MakeAggregateKey</code>​），这里要区分<code>LeftJoinKey</code>​和<code>RightJoinKey</code>​。</p><h4 id=init>Init</h4><p>根据之前提到HashJoin的实现方法，Init中要获取并遍历右表的所有行，构建一个哈希表。</p><h4 id=next>Next</h4><p>​<code>Next</code>​的实现与NestedLoopJoin的思路几乎完全一致，区别主要在于不需要遍历右表了，只需要遍历左表获取<code>LeftTuple</code>​，然后每次直接从hash表中查询是否有匹配上的<code>RightTuple</code>​。</p><p>查询得到的结果是一个向量，意味着可能匹配上了多个右表行（多个<code>RightTuple</code>​），且由于每次只返回一个Tuple，因此要在算子中记录（增加两个私有成员）当前匹配上的右表向量和一个迭代器<code>right_tuple_iter_</code>​（用于记录位置），同时也要使用一个<code>continue_flag_</code>​标记。</p><p>另外注意当在哈希表中没办法找到与<code>LeftTuple</code>​匹配的<code>RightTuple</code>​时，表明右表中不存在匹配的行，要对这种情况进行检查并分情况处理：</p><ol><li>当Join类型为LeftJoin时，要返回一个结合NULL的Tuple。</li><li>否则，进行往下遍历下一个<code>LeftTuple</code>​。</li></ol><h3 id=optimizenljashashjoin>OptimizeNLJAsHashJoin</h3><p>将NestedLoopJoin优化为HashJoin，大体思路与之前将SeqScan优化为IndexScan类似：</p><ol><li>对所有子节点递归应用这一优化</li><li>检查当前plan的<code>predicate</code>​是否满足优化的条件</li><li>如果满足，准备参数并创建优化后的PlanNode</li></ol><p>核心在于检查是否满足优化条件，主要通过<code>dynamic_cast</code>​和<code>predicate</code>​类型来判定。</p><p>这个优化主要检查<code>predicate</code>​是否满足:</p><p>​<code>&lt;column expr> = column AND column = column AND ...</code>​</p><p>由于可能有多个AND子句，递归检查是一个很好的方法。</p><h2 id=task4sort--limit-executors--window-functions--top-n-optimization>Task#4：Sort + Limit Executors + Window Functions + Top-N Optimization</h2><p>本任务中需要实现的几个算子都是需要在init阶段就获取所有子算子的输出结果（pipeline breaker），然后进行操作。</p><h3 id=sort>Sort</h3><p>Sort算子的Init和Next思路简单，init获取子算子的所有Tuple后根据order by子句对tuple进行排序。</p><p>重点是自定义排序规则，当存在多个order by子句时，排在前面的order by优先级更高，因此只有靠前的order by子句计算结果都相等，才会往后计算下一个order by。</p><h3 id=limit>limit</h3><p>更简单，在init中最多只获取limit个子算子中的Tuple。</p><h3 id=topn>TopN</h3><p>当既有sort操作又有limit限制时，使用TopN算法（即用一个堆维护前limit个数据，<code>std::priority_queue</code>​）显然效率更高。</p><h3 id=sortlimit优化为topn>Sortlimit优化为TopN</h3><p>由于limit和sort都只有一个child_executor，所以很好判断。若当前节点为limit节点，且其子节点为sort节点，此时满足优化条件，将其转化为一个topn算子。</p><p>注意：构建TopN节点时，传入的子节点child_executor应该为sort节点的child，而不是limit节点的child，否则传入了sort作为topn的子节点，相当于多排了一遍序，没有任何优化。</p><h3 id=window-functions窗口函数>Window Functions窗口函数</h3><p>前置知识学习</p><p><a href=https://blog.csdn.net/CoderSharry/article/details/135063960 target=_blank rel="noopener noreffer">【MySQL】窗口函数详解（概念+练习+实战）_mysql 窗口函数-CSDN博客</a></p><p>窗口函数语法</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl><span class=err>窗口函数</span><span class=p>([</span><span class=err>参数</span><span class=p>])</span> <span class=n>OVER</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=n>PARTITION</span> <span class=n>BY</span> <span class=o>&lt;</span><span class=err>分组列</span><span class=o>&gt;</span><span class=p>]</span> 
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=n>ORDER</span> <span class=n>BY</span> <span class=o>&lt;</span><span class=err>排序列</span> <span class=n>ASC</span><span class=o>/</span><span class=n>DESC</span><span class=o>&gt;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=n>ROWS</span> <span class=n>BETWEEN</span> <span class=err>开始行</span> <span class=n>AND</span> <span class=err>结束行</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>通常，窗口函数由三个部分组成：partition by, order by, and window frames。这三者都是可选的，因此这些功能的多种组合使窗口功能一开始令人生畏。</p><p>但是，窗口函数的概念模型有助于使其更易于理解. 概念模型如下:</p><ol><li>根据 partition by 子句中的条件拆分数据。</li><li>然后，在每个分区中，按 order by 子句顺序排序。</li><li>然后，在每个分区（现在已排序）中，循环访问每个元组。 对于每个元组，我们计算该元组的帧的边界条件。每个帧都有一个开始和结束（由window frames子句指定）。window 函数是在每一帧的元组上计算的，我们输出我们在每一帧中计算的内容。</li></ol><p>​​<figure><a class=lightgallery href=/posts/cmu445_p3/image-20240901171635-evx5h01.png title=image data-thumbnail=/posts/cmu445_p3/image-20240901171635-evx5h01.png data-sub-html="<h2>窗口函数概念模型</h2><p>image</p>"><img class=lazyload src=/svg/loading.min.svg data-src=/posts/cmu445_p3/image-20240901171635-evx5h01.png data-srcset="/posts/cmu445_p3/image-20240901171635-evx5h01.png, /posts/cmu445_p3/image-20240901171635-evx5h01.png 1.5x, /posts/cmu445_p3/image-20240901171635-evx5h01.png 2x" data-sizes=auto alt=/posts/cmu445_p3/image-20240901171635-evx5h01.png width=2082 height=804></a><figcaption class=image-caption>窗口函数概念模型</figcaption></figure>​​</p><blockquote><p>如果没有 order，聚合的窗口是第一个值到最后一个值；如果有 order，聚合的窗口的第一个值到当前值；如果有 partition，聚合只针对 partition 内</p></blockquote><h4 id=任务要求和提示>任务要求和提示</h4><p>这个任务不需要处理window frames，只需要实现<code>PARTITION BY</code>​和<code>ORDER BY</code>​子句。BusTub保障所有在一个查询中窗口函数的<code>ORDER BY</code>​子句都是相同的。</p><p>只要每行中的列匹配，测试用例就不会检查输出行的顺序。因此，当有<code>ORDER BY</code>​子句时，可以在进行计算之前先对元组进行排序，并且在没有子句排序时不要更改来自子执行程序的元组的顺序</p><p>您可以通过以下步骤实现算子：</p><ol><li>执行<code>ORDER BY</code>​子句排序Tuples</li><li>对每个partition生成初始值</li><li>Combine values for each partition and record the value for each row.</li></ol><p>您可以重用sort算子中的代码来完成步骤 1，并重用聚合算子中的代码来完成步骤 2 和步骤 3。</p><p>除了之前任务实现的聚合函数，您还需要实现<code>RANK</code>​函数。BusTub Planner确保如果存在<code>RANK</code>​窗口函数，<code>ORDER BY</code>​子句不为空。</p><h4 id=算子实现>算子实现</h4><p>根据文档提示，需要参考aggregate算子的<strong>哈希表</strong>实现窗口函数的运算（即实现一个窗口函数哈希表​<code>SimpleWindowFunctionHashTable</code>​），同时需要参考sort算子实现order by子句排序。</p><p>首要考虑的问题是：计算窗口函数所用的哈希表的key和val如何定义？</p><p>先看<code>WindowFunction</code>​的定义，有一个对应的function_、多个partition_by_和order_by_子句。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=k>struct</span> <span class=nc>WindowFunction</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>AbstractExpressionRef</span> <span class=n>function_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>WindowFunctionType</span> <span class=n>type_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>AbstractExpressionRef</span><span class=o>&gt;</span> <span class=n>partition_by_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>std</span><span class=o>::</span><span class=n>pair</span><span class=o>&lt;</span><span class=n>OrderByType</span><span class=p>,</span> <span class=n>AbstractExpressionRef</span><span class=o>&gt;&gt;</span> <span class=n>order_by_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><p>根据窗口函数的概念模型，根据 partition by 子句中的条件拆分数据，即为key，参考aggregation算子的<code>AggregateKey</code>​，可以发现同样适用于<code>Windowkey</code>​。</p><p>而对于value，不同于aggregation那样可以同时运算多个聚合函数，一个窗口函数只有一个function_，因而value应为单个<code>Value</code>​</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c++ data-lang=c++><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>MakeWindowKey</span><span class=p>(</span><span class=k>const</span> <span class=n>Tuple</span> <span class=o>*</span><span class=n>tuple</span><span class=p>,</span> <span class=k>const</span> <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>AbstractExpressionRef</span><span class=o>&gt;</span> <span class=o>&amp;</span><span class=n>partition_bys</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=n>AggregateKey</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>vector</span><span class=o>&lt;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=n>keys</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>keys</span><span class=p>.</span><span class=n>reserve</span><span class=p>(</span><span class=n>partition_bys</span><span class=p>.</span><span class=n>size</span><span class=p>());</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=k>auto</span> <span class=o>&amp;</span><span class=nl>expr</span> <span class=p>:</span> <span class=n>partition_bys</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>keys</span><span class=p>.</span><span class=n>emplace_back</span><span class=p>(</span><span class=n>expr</span><span class=o>-&gt;</span><span class=n>Evaluate</span><span class=p>(</span><span class=n>tuple</span><span class=p>,</span> <span class=n>plan_</span><span class=o>-&gt;</span><span class=n>OutputSchema</span><span class=p>()));</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=p>{</span><span class=n>keys</span><span class=p>};</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=k>auto</span> <span class=nf>MakeWindowValue</span><span class=p>(</span><span class=k>const</span> <span class=n>Tuple</span> <span class=o>*</span><span class=n>tuple</span><span class=p>,</span> <span class=k>const</span> <span class=n>AbstractExpressionRef</span> <span class=o>&amp;</span><span class=n>function</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>function</span><span class=o>-&gt;</span><span class=n>Evaluate</span><span class=p>(</span><span class=n>tuple</span><span class=p>,</span> <span class=n>plan_</span><span class=o>-&gt;</span><span class=n>OutputSchema</span><span class=p>());</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>明确了key和value定义，对照aggregation算子的哈希表实现，封装<code>SimpleWindowFunctionHashTable</code>​的<code>GenerateInitialAggregateValue</code>​、<code>CombineAggregateValue</code>​和<code>InsertCombine</code>​三个接口，实现逻辑十分相似。</p><p>一处需要注意的地方是<code>InsertCombine</code>​和<code>CombineAggregateValue</code>​现在都会返回一个当前计算得到的Value（aggregation则是统计一个Group_by_中的所有元组），这也是由于窗口函数的特性：**“如果有 order，聚合的窗口为第一个值到当前值”。**所以在输出中一个partition_by_组中不同Tuple的对应列的值都是不同的。</p><p>为了更方便实现窗口函数算子的功能，我增加了以下两个私有成员：</p><ol><li>​<code>std::vector&lt;SimpleWindowFunctionHashTable> whts_</code>​</li><li>​<code>std::deque&lt;std::vector&lt;Value>> tuples_</code>​</li></ol><p>窗口函数算子的<code>Init</code>​是一个难点，文档提供了实现步骤，不过很粗略。我的具体实现步骤如下：</p><ol><li><p>初始化子算子，获取子算子的所有输出<code>tuples</code>​。</p></li><li><p>对于排序，根据文档，所有的窗口函数只支持一个order by子句，因此这里只需要找到第一个order_by子句，然后采用Sort算子中同样的排序规则即可。</p></li><li><p>接下来考虑为每个窗口函数构建哈希表，planNode当中记录了执行计划的所有输出列，并且为窗口函数的列构建了一个哈希表（<code>plan_->window_functions_</code>​）。对于普通数值列不做任何处理，对于窗口函数列为其构建一个哈希表，用于后续的窗口函数计算。</p></li><li><p>接着对所有元组执行窗口函数：</p><ol><li><p>创建一个Value向量<code>values</code>​</p></li><li><p>遍历所有输出列：</p><ol><li>如果只是单纯的数值列，不需要进行处理直接存入vector</li><li>如果是窗口函数列，则先构建Windowkey，接着计算要插入哈希表的Value，可通过窗口函数<code>function_</code>​得到对应的列值（注意对于Rank操作要特殊处理，因为是根据order_by子句排序，所以要取order_by列的值）。最后再调用哈希表的接口计算窗口函数。（此时哈希表中存的是第一个tuple到当前tuple的聚合结果，不一定是最终结果）</li></ol></li><li><p>​<code>tuples_.emplace_back(std::move(values));</code>​</p></li></ol></li><li><p>最后还有一个特殊处理，就是对于没有order_by子句的窗口函数列，需要取出哈希表中计算出的最新值，即每个partition_by_下的统计结果。</p></li></ol><blockquote><p>这同样是基于窗口函数的概念模型：<strong>如果没有 order，聚合的窗口是第一个值到最后一个值；如果有 order，聚合的窗口的第一个值到当前值；如果有 partition，聚合只针对 partition 内</strong></p></blockquote><p>‍</p></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>更新于 2024-09-01</span></div></div><div class=post-info-line><div class=post-info-md><span><a class=link-to-markdown href=/posts/cmu445_p3/index.md target=_blank>阅读原始文档</a></span></div><div class=post-info-share><span><a href=javascript:void(0); title="分享到 Twitter" data-sharer=twitter data-url=https://sszgwdk.github.io/posts/cmu445_p3/ data-title="CMU15-445 Fall 2023 Project 3" data-hashtags=CMU15-445,DB><i class="fab fa-twitter fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Facebook" data-sharer=facebook data-url=https://sszgwdk.github.io/posts/cmu445_p3/ data-hashtag=CMU15-445><i class="fab fa-facebook-square fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Hacker News" data-sharer=hackernews data-url=https://sszgwdk.github.io/posts/cmu445_p3/ data-title="CMU15-445 Fall 2023 Project 3"><i class="fab fa-hacker-news fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 Line" data-sharer=line data-url=https://sszgwdk.github.io/posts/cmu445_p3/ data-title="CMU15-445 Fall 2023 Project 3"><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@7.3.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="分享到 微博" data-sharer=weibo data-url=https://sszgwdk.github.io/posts/cmu445_p3/ data-title="CMU15-445 Fall 2023 Project 3"><i class="fab fa-weibo fa-fw" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw" aria-hidden=true></i>&nbsp;<a href=/tags/cmu15-445/>CMU15-445</a>,&nbsp;<a href=/tags/db/>DB</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>返回</a></span>&nbsp;|&nbsp;<span><a href=/>主页</a></span></section></div><div class=post-nav><a href=/posts/cmu445_p2/ class=prev rel=prev title="CMU15-445 Fall 2023 Project 2"><i class="fas fa-angle-left fa-fw" aria-hidden=true></i>CMU15-445 Fall 2023 Project 2</a></div></div><div id=comments><div id=disqus_thread class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://disqus.com/?ref_noscript>Disqus</a>.</noscript><div id=giscus class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://giscus.app>Giscus</a>.</noscript></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line><span id=run-time></span></div><div class=footer-line>由 <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.133.1">Hugo</a> 强力驱动 | 主题 - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2024</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=/ target=_blank>SszgwDk</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div><script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script><section><span id=busuanzi_container_value_site_pv><i class="far fa-eye fa-fw"></i>
+<span id=busuanzi_value_site_pv></span>
+</span>&nbsp;|&nbsp;
+<span id=busuanzi_container_value_site_uv><i class="fa fa-user"></i>
+<span id=busuanzi_value_site_uv></span></span></section></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title=回到顶部><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title=查看评论><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/css/lightgallery-bundle.min.css><script type=text/javascript src=https://.disqus.com/embed.js defer></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lunr@2.3.9/lunr.min.js></script><script type=text/javascript src=/lib/lunr/lunr.stemmer.support.min.ed0a27121ddab004060c9428cdccae61.js integrity="md5-7QonEh3asAQGDJQozcyuYQ=="></script><script type=text/javascript src=/lib/lunr/lunr.zh.min.5e892728c8a115cebb72cc4d8b9e8eba.js integrity="md5-XoknKMihFc67csxNi56Oug=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/lightgallery.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/thumbnail/lg-thumbnail.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lightgallery@2.5.0/plugins/zoom/lg-zoom.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"复制到剪贴板",maxShownLines:50},comment:{giscus:{category:"Announcements",categoryId:"DIC_kwDOMj6qS84ChrG6",darkTheme:"dark",emitMetadata:"0",inputPosition:"bottom",lang:"zh-CN",lazyLoading:!1,lightTheme:"light",mapping:"pathname",reactionsEnabled:"1",repo:"sszgwdk/comment",repoId:"R_kgDOMj6qSw"}},lightgallery:!0,search:{highlightTag:"em",lunrIndexURL:"/index.json",lunrLanguageCode:"zh",lunrSegmentitURL:"/lib/lunr/lunr.segmentit.js",maxResultLength:10,noResultsFound:"没有找到结果",snippetLength:50,type:"lunr"}}</script><script type=text/javascript src=/js/theme.min.11ec27a93928e59f850531b2018d00bf.js integrity="md5-EewnqTko5Z+FBTGyAY0Avw=="></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/jquery@2.1.3/dist/jquery.min.js></script><script type=text/javascript src=/js/custom.js></script></body></html>
